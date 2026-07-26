@@ -1,0 +1,48 @@
+# SKELETON — tube-MPC-CBF parameters. Loaded *in addition to*
+# mpc_cbf_params.yaml (that file supplies the nominal MPC/CBF settings).
+# Consumed by MpcCbfNode::loadParameters() -> TubeConfig.
+
+/**:
+  ros__parameters:
+
+    use_tube_mpc: true
+
+    tube:
+      # --- disturbance set W ------------------------------------------------
+      # Zonotope: W = { center + G z : ||z||_inf <= 1 }.
+      # `generators` is row-major with `dimension` rows; the default below is a
+      # box on the velocity states only (wind acting as an acceleration
+      # disturbance over one step: 0.1 m/s per 0.1 s step => 1 m/s^2).
+      disturbance_set:
+        dimension: 4
+        center: [0.0, 0.0, 0.0, 0.0]
+        generators:
+          - [0.005, 0.000, 0.000, 0.000]
+          - [0.000, 0.005, 0.000, 0.000]
+          - [0.000, 0.000, 0.100, 0.000]
+          - [0.000, 0.000, 0.000, 0.100]
+
+      # --- ancillary feedback ----------------------------------------------
+      compute_gain_from_lqr: true
+      lqr_Q: [10.0, 10.0, 1.0, 1.0]
+      lqr_R: [1.0, 1.0]
+      # Used only when compute_gain_from_lqr is false; row-major nu x nx.
+      # A + B K must be Schur stable — initialize() rejects it otherwise.
+      K: []
+
+      # --- RPI set ----------------------------------------------------------
+      rpi_epsilon: 1.0e-3
+      rpi_max_iterations: 100
+      rpi_max_generators: 64
+
+      # --- CBF tightening ---------------------------------------------------
+      # support_function | lipschitz | none
+      # `none` is the deliberately-unsafe ablation used in
+      # analysis/disturbance_robustness_sweep.ipynb. Never ship it.
+      tighten_mode: "support_function"
+      lipschitz_h: 2.0        # only read when tighten_mode == lipschitz
+
+      # 0.0 => compute Omega once at startup. A positive value re-runs the RPI
+      # computation when the linearisation point drifts by more than this
+      # (metres); costly, keep it 0 for linear models.
+      relinearisation_threshold: 0.0

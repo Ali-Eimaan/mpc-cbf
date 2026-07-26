@@ -1,0 +1,64 @@
+# SKELETON — parameter names and defaults are the contract between
+# config/, launch/, and MpcCbfNode::declareParameters(). Keep them in sync.
+# Values marked (paper) reproduce Zeng-Zhang-Sreenath ACC 2021 Fig. 2-4;
+# do not retune them without updating reproduction/REPRODUCTION_REPORT.md.
+
+/**:
+  ros__parameters:
+
+    # --- plant / discretisation -------------------------------------------
+    # One of: double_integrator_2d | unicycle_2d | bicycle_kinematic | quadrotor_planar
+    model: "double_integrator_2d"
+    horizon: 8              # N, prediction horizon (paper: 8 for the 2-D example)
+    dt: 0.1                 # [s]
+    control_rate_hz: 10.0   # must equal 1/dt unless you know why it should not
+
+    # --- cost --------------------------------------------------------------
+    # Diagonal weights; lengths must match nx / nu for the selected model.
+    Q:  [10.0, 10.0, 1.0, 1.0]
+    R:  [1.0, 1.0]
+    Qf: [100.0, 100.0, 10.0, 10.0]
+
+    # --- bounds ------------------------------------------------------------
+    # Use +/- 1e9 for "unbounded"; the solver rejects true infinities.
+    x_min: [-1.0e9, -1.0e9, -2.0, -2.0]
+    x_max: [ 1.0e9,  1.0e9,  2.0,  2.0]
+    u_min: [-1.0, -1.0]
+    u_max: [ 1.0,  1.0]
+
+    # --- CBF ---------------------------------------------------------------
+    # fixed_decay   -> ACC 2021: h(x_{k+1}) - h(x_k) >= -gamma * h(x_k)
+    # relaxed_decay -> CDC 2021: ... >= -omega_k * gamma * h(x_k), omega_k free
+    # distance_only -> MPC-DC baseline (h >= 0 only), for the comparison plots
+    cbf_variant: "fixed_decay"
+    gamma: 0.3              # (0, 1]; smaller = more conservative, earlier avoidance
+    cbf_horizon: 0          # 0 => use `horizon`; a smaller value is the paper's N_CBF
+    ego_radius: 0.15        # [m]
+    safety_margin: 0.05     # [m] added on top of ego_radius
+
+    # relaxed_decay only. Safety requires omega_max * gamma <= 1.
+    omega_min: 0.0
+    omega_max: 3.0
+    omega_weight: 1000.0    # penalty on (omega_k - 1)^2
+    omega_decay_per_step: false
+
+    # --- solver ------------------------------------------------------------
+    max_sqp_iterations: 20  # set to 1 together with use_rti for the ROS loop
+    kkt_tolerance: 1.0e-6
+    use_rti: false
+
+    # --- runtime behaviour -------------------------------------------------
+    # hold_last | zero | brake | previous_horizon
+    infeasible_policy: "previous_horizon"
+    max_consecutive_failures: 5
+    odom_timeout_s: 0.5
+    frame_id: "map"
+    use_tube_mpc: false     # true switches to TubeMpcCbfSolver (see tube_mpc_params.yaml)
+
+    # --- topics (remap-friendly defaults) ----------------------------------
+    odom_topic: "~/odom"
+    goal_topic: "~/goal"
+    obstacle_topic: "~/obstacles"
+    cmd_topic: "~/cmd_vel"
+    predicted_path_topic: "~/predicted_path"
+    cbf_values_topic: "~/cbf_values"

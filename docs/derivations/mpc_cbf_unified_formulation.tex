@@ -1,0 +1,80 @@
+% SKELETON — structure only. Fill each \TODO; see IMPLEMENTATION_GUIDE.md §12.2.
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{algorithm,algpseudocode}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{remark}{Remark}
+\newcommand{\TODO}[1]{\textbf{[TODO: #1]}}
+
+\title{A Unified MPC-CBF Formulation}
+\author{Ali-Eimaan}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\TODO{State the single optimisation problem that specialises --- by parameter choice alone --- to
+MPC-DC, MPC-CBF with fixed decay, the CDC 2021 relaxed-decay variant, and the one-step CBF-QP.
+That unification is the contribution of this note and the reason the codebase has one solver class
+rather than four.}
+\end{abstract}
+
+\section{The unified problem}
+\TODO{Write the OCP in full:
+\begin{align*}
+\min_{\mathbf{u}, \boldsymbol{\omega}} \quad & \sum_{k=0}^{N-1} \left[ \|x_{k|t} - x^{\mathrm{ref}}_{k}\|_Q^2 + \|u_{k|t}\|_R^2 + p_\omega \sum_j (\omega_{k,j} - 1)^2 \right] + \|x_{N|t} - x^{\mathrm{ref}}_N\|_{Q_f}^2 \\
+\text{s.t.}\quad & x_{k+1|t} = f(x_{k|t}, u_{k|t}) \\
+ & x_{0|t} = x_t,\quad x_{k|t} \in \mathcal{X},\quad u_{k|t} \in \mathcal{U} \\
+ & h_j(x_{k|t}) \ge 0 \\
+ & h_j(x_{k+1|t}) - h_j(x_{k|t}) \ge -\omega_{k,j}\gamma h_j(x_{k|t}),\quad k < N_{\mathrm{CBF}}
+\end{align*}
+Then the specialisation table: $\omega \equiv 1$ gives ACC 2021; $\omega$ free with
+$\omega\gamma \le 1$ gives CDC 2021; dropping the decay row gives MPC-DC; $N = 1$ with a tracking cost
+gives the CBF-QP filter.}
+
+\section{Why the decay row is imposed along the prediction}
+\TODO{Contrast imposing the DCBF condition only at $k=0$ (myopic, equivalent to the QP filter) with
+imposing it for $k < N_{\mathrm{CBF}}$. Explain the mechanism by which the horizon buys feasibility:
+the optimiser can trade barrier decay across stages instead of paying it all immediately. Reference the
+empirical curve in \texttt{analysis/feasibility\_recovery\_study.ipynb}.}
+
+\section{Choice of $N_{\mathrm{CBF}}$}
+\TODO{Constraint count is $N_{\mathrm{CBF}} \times n_{\mathrm{obs}}$; give the resulting QP size and
+the measured solve-time scaling. Justify the default in \texttt{config/mpc\_cbf\_params.yaml}.}
+
+\section{Feasibility}
+\TODO{This section must be honest. State that neither ACC 2021 nor this implementation provides a
+recursive-feasibility certificate; give the standard sufficient conditions (terminal control-invariant
+set inside $\mathcal{C}$, or a sufficiently long horizon), state that they are \emph{not} imposed here,
+and point at the empirical study. A reviewer who finds this section overclaiming discounts the whole
+repository.}
+
+\begin{proposition}[Closed-loop safety given per-step feasibility]
+\TODO{If the problem is feasible at every $t$ and $x_0 \in \mathcal{C}$, then $x_t \in \mathcal{C}$ for
+all $t$. Note precisely how weak this is: it assumes exactly the thing that is not guaranteed.}
+\end{proposition}
+
+\section{Numerical formulation}
+\TODO{Multiple shooting; Gauss-Newton Hessian; the barrier row's Jacobian in closed form (it is affine,
+so give it); why the DISCRETE integrator type is mandatory --- an ERK integrator would enforce the
+condition on an interpolated state, changing its meaning.}
+
+\begin{algorithm}
+\caption{One control step}
+\begin{algorithmic}[1]
+\State \TODO{measure $x_t$; prune and propagate obstacles; push parameters; warm start from the shifted
+previous solution; solve; extract $u_{0|t}$; shift for the next warm start; publish diagnostics.}
+\end{algorithmic}
+\end{algorithm}
+
+\section{Complexity and timing}
+\TODO{Report measured solve times as a function of $N$, $n_{\mathrm{obs}}$, and SQP vs RTI, from the
+\texttt{SolveMeetsRealTimeBudget} gtest. Table, with the CPU named.}
+
+\end{document}

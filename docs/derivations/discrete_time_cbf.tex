@@ -1,0 +1,81 @@
+% SKELETON — structure only. Fill each \TODO; see IMPLEMENTATION_GUIDE.md §12.2.
+% Compile: pdflatex discrete_time_cbf.tex   (CI compiles all files in this dir)
+\documentclass[11pt]{article}
+
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage[margin=1in]{geometry}
+\usepackage{hyperref}
+
+\newtheorem{definition}{Definition}
+\newtheorem{theorem}{Theorem}
+\newtheorem{proposition}{Proposition}
+\newtheorem{lemma}{Lemma}
+\newcommand{\TODO}[1]{\textbf{[TODO: #1]}}
+
+\title{Discrete-Time Control Barrier Functions}
+\author{Ali-Eimaan}
+\date{\today}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\TODO{Two sentences: what is defined here, and which repository components depend on it
+(\texttt{codegen/models.py::dcbf\_constraint}, \texttt{MpcCbfSolver::barrierValue}).}
+\end{abstract}
+
+\section{Setup and notation}
+\TODO{System $x_{k+1} = f(x_k, u_k)$ with $f : \mathcal{X} \times \mathcal{U} \to \mathcal{X}$ locally
+Lipschitz; safe set $\mathcal{C} = \{x \in \mathcal{X} : h(x) \ge 0\}$ with $h$ continuously
+differentiable; class-$\mathcal{K}$ conventions. Keep every symbol identical to
+\texttt{docs/README\_math.md}.}
+
+\section{Definition}
+\begin{definition}[Discrete-time CBF]
+\TODO{State: $h$ is a DCBF if there exists $\alpha \in \mathcal{K}$ with $\alpha(r) \le r$ such that
+$\sup_{u \in \mathcal{U}} \left[ h(f(x,u)) - h(x) \right] \ge -\alpha(h(x))$ for all $x \in \mathcal{C}$.
+Add the remark explaining why $\alpha(r) \le r$ is required rather than merely convenient.}
+\end{definition}
+
+\section{Forward invariance}
+\begin{theorem}[Invariance of $\mathcal{C}$]
+\TODO{If $h$ is a DCBF and $u_k$ satisfies the DCBF inequality at every $k$, then $x_0 \in \mathcal{C}$
+implies $x_k \in \mathcal{C}$ for all $k \ge 0$.}
+\end{theorem}
+\begin{proof}
+\TODO{Induction on $k$: $h(x_{k+1}) \ge h(x_k) - \alpha(h(x_k)) \ge 0$ using $\alpha(r) \le r$ and
+$h(x_k) \ge 0$. Two lines; write them out, they are the load-bearing step.}
+\end{proof}
+
+\section{Linear class-$\mathcal{K}$ specialisation}
+\TODO{Set $\alpha(r) = \gamma r$, $\gamma \in (0,1]$, giving $h(x_{k+1}) \ge (1-\gamma) h(x_k)$.
+Interpret $\gamma$ as the permitted per-step fractional loss of barrier value; give the resulting
+exponential lower envelope $h(x_k) \ge (1-\gamma)^k h(x_0)$ (this envelope is plotted in the ACC
+reproduction notebook, \S3).}
+
+\begin{proposition}[Necessity of $\gamma \le 1$]
+\TODO{Exhibit a state with $h(x_k) > 0$ from which $\gamma > 1$ admits $h(x_{k+1}) < 0$.}
+\end{proposition}
+
+\section{The barrier used in this repository}
+\TODO{$h_j(x) = \|p(x) - p_j\|^2 - (r_j + r_{\mathrm{ego}} + \delta)^2$. Justify the squared form
+(smooth at $p = p_j$, quadratic in $x$, so the constraint Jacobian is affine and the SQP Hessian is exact
+for the barrier row). Give $\nabla h_j$ explicitly --- \texttt{TubeMpcCbfSolver::tighteningFor} uses it.}
+
+\section{Relaxed decay rate}
+\TODO{$h(x_{k+1}) - h(x_k) \ge -\omega_k \gamma h(x_k)$ with $\omega_k \ge 0$ a decision variable.}
+\begin{proposition}[Safety under relaxation]
+\TODO{If $h(x_k) \ge 0$ and $\omega_k \gamma \le 1$ then $h(x_{k+1}) \ge 0$. Prove it, then note that the
+implementation enforces the hypothesis as a hard configuration check.}
+\end{proposition}
+
+\section{Relation to the continuous-time definition}
+\TODO{Show that the DCBF condition is the forward-Euler discretisation of
+$\dot h \ge -\alpha(h)$ and quantify the discretisation gap: for step $\Delta t$ and $h$ with Lipschitz
+gradient $L_{\nabla h}$, bound the error and state what $\Delta t$ must satisfy for the discrete condition
+to imply the continuous one. This bound is why \texttt{dt} is a solver parameter and not a free knob.}
+
+\section*{References}
+\TODO{Agrawal \& Sreenath 2017; Ames et al. 2017/2019; Zeng et al. ACC/CDC 2021.}
+
+\end{document}

@@ -1,0 +1,15 @@
+# Pin exactly; CI reproducibility of the notebooks depends on it.
+# TODO(deepseek): replace the ranges with the versions you actually validated,
+# and record them in reproduction/REPRODUCTION_REPORT.md.
+numpy>=1.26,<2.2
+scipy>=1.11,<1.15
+casadi>=3.6.5,<3.7
+matplotlib>=3.8,<3.10
+pandas>=2.1,<2.3
+jupyter>=1.0
+nbconvert>=7.10
+pytest>=8.0
+
+# acados_template ships with the acados source tree and must be installed from
+# it, not from PyPI:
+#   pip install -e ${ACADOS_SOURCE_DIR}/interfaces/acados_template

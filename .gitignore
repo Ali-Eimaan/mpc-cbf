@@ -1,0 +1,47 @@
+# --- ROS 2 / colcon ---
+build/
+install/
+log/
+.colcon/
+
+# --- acados generated code ---
+c_generated_code/
+acados_ocp_*.json
+*_acados_ocp.json
+lib*acados*.so
+lib*acados*.dylib
+
+# --- Python ---
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.ipynb_checkpoints/
+.pytest_cache/
+*.egg-info/
+
+# --- C/C++ ---
+*.o
+*.a
+*.so
+compile_commands.json
+
+# --- Notebook / analysis outputs ---
+analysis/**/*.csv
+analysis/**/*.npz
+reproduction/**/*.csv
+reproduction/**/*.npz
+results/
+
+# --- LaTeX build artifacts ---
+docs/derivations/*.aux
+docs/derivations/*.log
+docs/derivations/*.out
+docs/derivations/*.pdf
+docs/derivations/*.synctex.gz
+
+# --- Editors / OS ---
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

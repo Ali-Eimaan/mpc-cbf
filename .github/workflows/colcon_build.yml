@@ -1,0 +1,101 @@
+name: colcon build & test
+
+# SKELETON: job structure is final; steps marked TODO must be filled in once the
+# corresponding source files are implemented. See IMPLEMENTATION_GUIDE.md §9.
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+defaults:
+  run:
+    shell: bash
+
+jobs:
+  # ---------------------------------------------------------------------------
+  # 1. C++ / ROS 2 package: build + gtest + linters
+  # ---------------------------------------------------------------------------
+  colcon:
+    name: colcon build (ROS 2 Jazzy)
+    runs-on: ubuntu-24.04
+    container:
+      image: ros:jazzy-ros-base
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: src/mpc-cbf
+
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential cmake git python3-pip python3-colcon-common-extensions \
+            libeigen3-dev
+          # TODO(deepseek): add any extra deps introduced by the implementation.
+
+      - name: Build and install acados
+        run: |
+          echo "TODO(deepseek): clone acados (pinned tag), cmake -DACADOS_WITH_QPOASES=ON,"
+          echo "                make install, export ACADOS_SOURCE_DIR / LD_LIBRARY_PATH."
+          echo "                Cache the install dir with actions/cache to keep CI under 10 min."
+
+      - name: Generate acados solvers
+        run: |
+          echo "TODO(deepseek): pip install -r src/mpc-cbf/codegen/requirements.txt"
+          echo "                python3 src/mpc-cbf/codegen/generate_mpc_cbf_solver.py --all"
+          echo "                python3 src/mpc-cbf/codegen/generate_tube_solver.py --all"
+
+      - name: colcon build
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+
+      - name: colcon test
+        run: |
+          source /opt/ros/jazzy/setup.bash
+          colcon test --event-handlers console_direct+
+          colcon test-result --verbose
+
+  # ---------------------------------------------------------------------------
+  # 2. Python: unit tests + notebook execution (reproduction must stay green)
+  # ---------------------------------------------------------------------------
+  python:
+    name: python tests & notebook reproduction
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r codegen/requirements.txt
+
+      - name: Run Python tests
+        run: |
+          echo "TODO(deepseek): pytest mpc_cbf_unified/test/test_recursive_feasibility.py -v"
+
+      - name: Execute reproduction notebooks
+        run: |
+          echo "TODO(deepseek): jupyter nbconvert --to notebook --execute \\"
+          echo "                  reproduction/zeng_acc2021/reproduce_acc2021.ipynb \\"
+          echo "                  reproduction/zeng_cdc2021/reproduce_cdc2021.ipynb"
+          echo "The notebooks must assert their own key numbers so a regression fails CI."
+
+  # ---------------------------------------------------------------------------
+  # 3. Docs: LaTeX derivations must compile
+  # ---------------------------------------------------------------------------
+  docs:
+    name: build derivations
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - name: Compile LaTeX derivations
+        run: |
+          echo "TODO(deepseek): compile docs/derivations/*.tex with a latex action or texlive container."
