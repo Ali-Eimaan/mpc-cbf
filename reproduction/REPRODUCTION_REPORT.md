@@ -2,7 +2,7 @@
 
 > **SKELETON.** Every `TBD` is filled by executing the two reproduction notebooks and pasting their
 > emitted tables. Do not hand-write a number into this file — every entry must be traceable to a cell
-> output. See `IMPLEMENTATION_GUIDE.md` §11.6.
+> output. See `.deepseek/13_DOCS.md` §13.5.
 
 This document is the credential the repository exists to earn: it states precisely which figures from the
 two source papers were reproduced, which numbers matched, to what tolerance, and — importantly — what did

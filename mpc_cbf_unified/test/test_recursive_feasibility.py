@@ -6,14 +6,14 @@ the model definitions with codegen/models.py so that the swept dynamics are
 provably the same ones the C++ solver runs.
 
 Run:  pytest mpc_cbf_unified/test/test_recursive_feasibility.py -v
-Implement per IMPLEMENTATION_GUIDE.md §8.3.
+Implement per .deepseek/11_PYTHON_REFERENCE.md.
 """
 
 from __future__ import annotations
 
 import pytest
 
-# TODO(deepseek): import numpy as np, and the shared helpers:
+# TODO(deepseek §11): import numpy as np, and the shared helpers:
 #   from codegen.models import double_integrator_2d, unicycle_2d
 #   from codegen.generate_mpc_cbf_solver import build_ocp  (returns AcadosOcp)
 #   from acados_template import AcadosOcpSolver
@@ -28,7 +28,7 @@ import pytest
 def solver():
     """Build one MPC-CBF solver for the 2-D scenario and reuse it.
 
-    TODO(deepseek): build the OCP for double_integrator_2d with N=8, dt=0.1,
+    TODO(deepseek §11): build the OCP for double_integrator_2d with N=8, dt=0.1,
     gamma=0.3, one obstacle at (0.5, 0.5) r=0.2; yield an AcadosOcpSolver.
     Skip the whole module with pytest.skip when acados is unavailable, so the
     suite stays runnable on a laptop without it.
@@ -50,7 +50,7 @@ def feasible_start_grid():
 def test_feasible_set_is_nonempty(solver, feasible_start_grid):
     """At least 80% of the grid must admit a feasible first solve.
 
-    TODO(deepseek): if this drops, either gamma is too aggressive or the input
+    TODO(deepseek §11): if this drops, either gamma is too aggressive or the input
     bounds are too tight — report which by counting the status codes.
     """
     raise NotImplementedError
@@ -59,13 +59,13 @@ def test_feasible_set_is_nonempty(solver, feasible_start_grid):
 def test_persistent_feasibility_along_closed_loop(solver, feasible_start_grid):
     """Once feasible, stay feasible.
 
-    TODO(deepseek): for every start that solved at k=0, run 100 closed-loop
+    TODO(deepseek §11): for every start that solved at k=0, run 100 closed-loop
     steps and assert every subsequent solve also succeeded. Record the failures
     with their start states; a nonzero count is the interesting scientific
     result, so print the list rather than only asserting.
 
     Note the theory: DT-CBF constraints do NOT by themselves guarantee
-    recursive feasibility (see the guide, §1.4). This test therefore measures
+    recursive feasibility (see .deepseek/01_OVERVIEW.md §1.6). This test therefore measures
     the empirical feasible-set shrinkage, and the assertion threshold is
     calibrated in reproduction/REPRODUCTION_REPORT.md rather than assumed.
     """
@@ -75,7 +75,7 @@ def test_persistent_feasibility_along_closed_loop(solver, feasible_start_grid):
 def test_infeasibility_is_recoverable_with_relaxed_decay(solver):
     """Every start that fails under fixed decay must be retried under relaxed decay.
 
-    TODO(deepseek): collect the fixed-decay failures, rebuild the solver with
+    TODO(deepseek §11): collect the fixed-decay failures, rebuild the solver with
     the CDC 2021 omega formulation, and assert the recovery rate exceeds 90%.
     """
     raise NotImplementedError
@@ -85,7 +85,7 @@ def test_infeasibility_is_recoverable_with_relaxed_decay(solver):
 def test_feasible_fraction_decreases_with_gamma(solver, gamma):
     """Sweep gamma and record the feasible fraction.
 
-    TODO(deepseek): assert monotone (within noise) shrinkage of the feasible
+    TODO(deepseek §11): assert monotone (within noise) shrinkage of the feasible
     set as gamma grows, and dump the curve to results/feasibility_vs_gamma.csv
     for analysis/feasibility_recovery_study.ipynb.
     """
@@ -96,7 +96,7 @@ def test_feasible_fraction_decreases_with_gamma(solver, gamma):
 def test_longer_horizon_enlarges_feasible_set(horizon):
     """N = 1 (CBF-QP-like) must be strictly worse than N = 15.
 
-    TODO(deepseek): the feasible fraction must be non-decreasing in N. This is
+    TODO(deepseek §11): the feasible fraction must be non-decreasing in N. This is
     the quantitative version of the CBF-QP vs MPC-CBF argument.
     """
     raise NotImplementedError
@@ -110,7 +110,7 @@ def test_longer_horizon_enlarges_feasible_set(horizon):
 def test_python_and_cpp_agree_on_first_input():
     """The two front-ends must produce the same u0.
 
-    TODO(deepseek): run the C++ solver over 50 states via a tiny CLI harness
+    TODO(deepseek §11): run the C++ solver over 50 states via a tiny CLI harness
     (mpc_cbf_unified/test/cpp_solve_cli.cpp, added by you) or ctypes bindings,
     and assert ||u0_py - u0_cpp||_inf < 1e-6. Without this, the notebooks and
     the deployed controller can silently diverge.

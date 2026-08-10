@@ -3,7 +3,7 @@
 > **SKELETON.** Structure and the entries to cover are fixed; annotations are `TODO`. Each entry needs:
 > full citation, the one-sentence idea, what it assumes, what it guarantees, and how it relates to this
 > repository. Aim for 3-6 sentences per entry — an annotated bibliography, not a list.
-> See `IMPLEMENTATION_GUIDE.md` §12.3.
+> See `.deepseek/13_DOCS.md` §13.3.
 
 ## 1. Foundations — continuous-time CBFs
 

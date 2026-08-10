@@ -5,14 +5,14 @@ a bounded disturbance drawn from W. Running it twice (use_tube_mpc:=false then
 true) produces the two traces in media/tube_robustness.gif: nominal MPC-CBF
 clips the obstacle, tube-MPC-CBF does not.
 
-Implement per IMPLEMENTATION_GUIDE.md §7.
+Implement per .deepseek/09_NODE.md §9.7.
 """
 
 from launch import LaunchDescription
 
 
 def generate_launch_description() -> LaunchDescription:
-    # TODO(deepseek): assemble and return the description.
+    # TODO(deepseek §9.7): assemble and return the description.
     #
     # Launch arguments:
     #   use_tube_mpc      bool  true

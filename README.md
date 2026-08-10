@@ -3,7 +3,8 @@
 Discrete-time MPC with CBF constraints (Zeng-Zhang-Sreenath ACC 2021 + CDC 2021 reproduced in C++/acados, plus tube-MPC-CBF extension).
 
 > **Status: skeleton.** The repository structure, interfaces, tests and documentation outlines are in
-> place; the implementation is not. Start at [IMPLEMENTATION_GUIDE.md](IMPLEMENTATION_GUIDE.md).
+> place; the implementation is not. The full implementation specification lives in
+> [`.deepseek/`](.deepseek/) — start at [`.deepseek/README.md`](.deepseek/README.md).
 
 <!-- TODO: badges once CI is green — colcon build, notebook reproduction, license -->
 
@@ -24,12 +25,13 @@ C++ / acados for the controller, Python for code generation, reproduction and an
 
 | Path | Contents |
 |---|---|
-| `mpc_cbf_unified/` | ROS 2 (Jazzy) package: solvers, node, launch files, configs, tests |
+| `mpc_cbf_unified/` | ROS 2 (Lyrical Luth) package: solvers, node, launch files, configs, tests |
 | `codegen/` | acados/CasADi code generation and the shared model definitions |
 | `reproduction/` | Notebooks reproducing the two source papers + `REPRODUCTION_REPORT.md` |
 | `analysis/` | CBF-QP vs MPC-CBF, feasibility recovery, disturbance robustness studies |
 | `docs/` | Derivations (LaTeX), math summary, annotated prior art |
 | `media/` | Demo GIFs (regenerated from notebooks) |
+| `.deepseek/` | Implementation specification: rules, milestones, per-subsystem contracts, review protocol |
 
 ## Quick start
 
@@ -54,4 +56,4 @@ C++ / acados for the controller, Python for code generation, reproduction and an
 
 ## License
 
-MIT — see [LICENSE](LICENSE).
+BSD-3-Clause — see [LICENSE](LICENSE).

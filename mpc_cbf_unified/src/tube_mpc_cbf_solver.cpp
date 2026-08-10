@@ -1,7 +1,8 @@
-// Copyright (c) 2026 Ali-Eimaan. MIT License.
+// Copyright (c) 2026, Ali-Eimaan. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 //
 // SKELETON — no implementation. Implement after Milestone 1 is green; the
-// algorithm is specified in IMPLEMENTATION_GUIDE.md §4 and §5.
+// algorithm is specified in .deepseek/08_TUBE.md and .deepseek/07_SETS.md.
 //
 // This translation unit also hosts the Polytope/Zonotope/RPI implementations
 // declared in disturbance_sets.hpp, so that the set machinery and its only
@@ -23,7 +24,7 @@ namespace mpc_cbf_unified
 
 Polytope::Polytope(const Eigen::MatrixXd & A, const Eigen::VectorXd & b)
 {
-  // TODO(deepseek): validate A.rows() == b.size(); normalise each row of [A|b]
+  // TODO(deepseek §7): validate A.rows() == b.size(); normalise each row of [A|b]
   // by ||a_i||_2 so that support/containment tolerances have a geometric
   // meaning; drop zero rows with b_i >= 0 and mark empty when b_i < 0.
   (void)A;
@@ -33,14 +34,14 @@ Polytope::Polytope(const Eigen::MatrixXd & A, const Eigen::VectorXd & b)
 
 Polytope Polytope::box(const Eigen::VectorXd & half_widths)
 {
-  // TODO(deepseek): A = [I; -I], b = [h; h].
+  // TODO(deepseek §7): A = [I; -I], b = [h; h].
   (void)half_widths;
   throw std::logic_error("Polytope::box(half_widths) not implemented");
 }
 
 Polytope Polytope::box(const Eigen::VectorXd & lower, const Eigen::VectorXd & upper)
 {
-  // TODO(deepseek): A = [I; -I], b = [upper; -lower]; reject lower > upper.
+  // TODO(deepseek §7): A = [I; -I], b = [upper; -lower]; reject lower > upper.
   (void)lower;
   (void)upper;
   throw std::logic_error("Polytope::box(lower, upper) not implemented");
@@ -48,7 +49,7 @@ Polytope Polytope::box(const Eigen::VectorXd & lower, const Eigen::VectorXd & up
 
 Polytope Polytope::fromVertices(const Eigen::MatrixXd & points)
 {
-  // TODO(deepseek): 2-D convex hull (monotone chain) -> edge normals; 3-D via
+  // TODO(deepseek §7): 2-D convex hull (monotone chain) -> edge normals; 3-D via
   // incremental hull. Throw std::invalid_argument for dimension > 3.
   (void)points;
   throw std::logic_error("Polytope::fromVertices not implemented");
@@ -76,14 +77,14 @@ const Eigen::VectorXd & Polytope::b() const
 
 bool Polytope::isEmpty() const
 {
-  // TODO(deepseek): Chebyshev-centre LP; empty iff the max inscribed radius is
+  // TODO(deepseek §7): Chebyshev-centre LP; empty iff the max inscribed radius is
   // negative. Cache the result.
   throw std::logic_error("Polytope::isEmpty not implemented");
 }
 
 double Polytope::support(const Eigen::VectorXd & direction) const
 {
-  // TODO(deepseek): max d^T x s.t. A x <= b, solved with the dense simplex in
+  // TODO(deepseek §7): max d^T x s.t. A x <= b, solved with the dense simplex in
   // the anonymous namespace of this file (write it once, ~120 lines, no
   // external LP dependency). Return +inf when unbounded.
   (void)direction;
@@ -99,7 +100,7 @@ bool Polytope::contains(const Eigen::VectorXd & x, double tol) const
 
 Polytope Polytope::minkowskiSum(const Polytope & other) const
 {
-  // TODO(deepseek): for the union of both normal directions a_i, set
+  // TODO(deepseek §7): for the union of both normal directions a_i, set
   // b_i = h_this(a_i) + h_other(a_i); then removeRedundantHalfspaces().
   (void)other;
   throw std::logic_error("Polytope::minkowskiSum not implemented");
@@ -107,7 +108,7 @@ Polytope Polytope::minkowskiSum(const Polytope & other) const
 
 Polytope Polytope::pontryaginDifference(const Polytope & other) const
 {
-  // TODO(deepseek): same A, b_i <- b_i - h_other(a_i). Exact. This is the
+  // TODO(deepseek §7): same A, b_i <- b_i - h_other(a_i). Exact. This is the
   // constraint-tightening workhorse: X (-) Omega and U (-) K Omega.
   (void)other;
   throw std::logic_error("Polytope::pontryaginDifference not implemented");
@@ -115,7 +116,7 @@ Polytope Polytope::pontryaginDifference(const Polytope & other) const
 
 Polytope Polytope::linearMap(const Eigen::MatrixXd & M) const
 {
-  // TODO(deepseek): invertible M -> (A M^{-1}, b). Otherwise map the vertices
+  // TODO(deepseek §7): invertible M -> (A M^{-1}, b). Otherwise map the vertices
   // and rebuild via fromVertices (dimension <= 3 only).
   (void)M;
   throw std::logic_error("Polytope::linearMap not implemented");
@@ -129,7 +130,7 @@ Polytope Polytope::intersect(const Polytope & other) const
 
 int Polytope::removeRedundantHalfspaces(double tol)
 {
-  // TODO(deepseek): row i is redundant iff max{a_i^T x : A_{-i} x <= b_{-i}}
+  // TODO(deepseek §7): row i is redundant iff max{a_i^T x : A_{-i} x <= b_{-i}}
   // <= b_i + tol. One LP per row; fine at these sizes.
   (void)tol;
   throw std::logic_error("Polytope::removeRedundantHalfspaces not implemented");
@@ -137,7 +138,7 @@ int Polytope::removeRedundantHalfspaces(double tol)
 
 Eigen::MatrixXd Polytope::vertices() const
 {
-  // TODO(deepseek): enumerate intersections of n half-space subsets, keep the
+  // TODO(deepseek §7): enumerate intersections of n half-space subsets, keep the
   // feasible ones, deduplicate, order counter-clockwise in 2-D (plotting
   // depends on the ordering).
   throw std::logic_error("Polytope::vertices not implemented");
@@ -145,7 +146,7 @@ Eigen::MatrixXd Polytope::vertices() const
 
 double Polytope::maxNorm() const
 {
-  // TODO(deepseek): max over vertices of ||v||_2 in low dimension; otherwise
+  // TODO(deepseek §7): max over vertices of ||v||_2 in low dimension; otherwise
   // maximise the support function over a direction grid (documented as an
   // under-approximation in that branch — say so in the log).
   throw std::logic_error("Polytope::maxNorm not implemented");
@@ -153,13 +154,13 @@ double Polytope::maxNorm() const
 
 std::pair<Eigen::VectorXd, Eigen::VectorXd> Polytope::boundingBox() const
 {
-  // TODO(deepseek): support(+e_i) and -support(-e_i) for each axis.
+  // TODO(deepseek §7): support(+e_i) and -support(-e_i) for each axis.
   throw std::logic_error("Polytope::boundingBox not implemented");
 }
 
 Polytope Polytope::scaled(double factor) const
 {
-  // TODO(deepseek): (A, factor * b) for factor >= 0.
+  // TODO(deepseek §7): (A, factor * b) for factor >= 0.
   (void)factor;
   throw std::logic_error("Polytope::scaled not implemented");
 }
@@ -181,7 +182,7 @@ Polytope Polytope::fromYaml(const std::string & yaml)
 
 Zonotope::Zonotope(const Eigen::VectorXd & center, const Eigen::MatrixXd & generators)
 {
-  // TODO(deepseek): validate generators.rows() == center.size().
+  // TODO(deepseek §7): validate generators.rows() == center.size().
   (void)center;
   (void)generators;
   throw std::logic_error("Zonotope::Zonotope not implemented");
@@ -215,7 +216,7 @@ const Eigen::MatrixXd & Zonotope::generators() const
 
 double Zonotope::support(const Eigen::VectorXd & direction) const
 {
-  // TODO(deepseek): d^T c + ||G^T d||_1. Closed form, no LP.
+  // TODO(deepseek §7): d^T c + ||G^T d||_1. Closed form, no LP.
   (void)direction;
   throw std::logic_error("Zonotope::support not implemented");
 }
@@ -234,7 +235,7 @@ Zonotope Zonotope::linearMap(const Eigen::MatrixXd & M) const
 
 Zonotope Zonotope::reduceOrder(int max_generators) const
 {
-  // TODO(deepseek): Girard's method — sort generators by ||g||_1 - ||g||_inf,
+  // TODO(deepseek §7): Girard's method — sort generators by ||g||_1 - ||g||_inf,
   // keep the largest (max_generators - n), replace the rest by the diagonal
   // box of their absolute row sums. Must be an over-approximation; assert it
   // in the unit test by sampling.
@@ -250,7 +251,7 @@ Polytope Zonotope::toPolytope() const
 
 bool Zonotope::contains(const Eigen::VectorXd & x, double tol) const
 {
-  // TODO(deepseek): feasibility LP min 0 s.t. G z = x - c, ||z||_inf <= 1.
+  // TODO(deepseek §7): feasibility LP min 0 s.t. G z = x - c, ||z||_inf <= 1.
   (void)x;
   (void)tol;
   throw std::logic_error("Zonotope::contains not implemented");
@@ -268,7 +269,7 @@ double Zonotope::maxNorm() const
 RpiResult computeRpiSet(
   const Eigen::MatrixXd & A_cl, const Zonotope & W, double epsilon, int max_iterations)
 {
-  // TODO(deepseek): Rakovic et al. (2005), Algorithm 1.
+  // TODO(deepseek §7): Rakovic et al. (2005), Algorithm 1.
   //  1. Reject a non-Schur A_cl (spectral radius >= 1) -> converged = false.
   //  2. For s = 1, 2, ...: find the smallest alpha in [0,1) with
   //     h_W(A_cl^{s T} a_i) <= alpha * h_W(a_i) for every direction a_i, i.e.
@@ -288,7 +289,7 @@ RpiResult computeRpiSet(
 bool isRobustPositivelyInvariant(
   const Eigen::MatrixXd & A_cl, const Polytope & Omega, const Polytope & W, double tol)
 {
-  // TODO(deepseek): for every row a_i of Omega, check
+  // TODO(deepseek §7): for every row a_i of Omega, check
   //   h_Omega(A_cl^T a_i) + h_W(a_i) <= b_i + tol.
   (void)A_cl;
   (void)Omega;
@@ -301,7 +302,7 @@ Eigen::MatrixXd discreteLqrGain(
   const Eigen::MatrixXd & A, const Eigen::MatrixXd & B, const Eigen::MatrixXd & Q,
   const Eigen::MatrixXd & R, int max_iterations, double tol)
 {
-  // TODO(deepseek): iterate P <- Q + A^T P A - A^T P B (R + B^T P B)^{-1} B^T P A
+  // TODO(deepseek §7): iterate P <- Q + A^T P A - A^T P B (R + B^T P B)^{-1} B^T P A
   // until ||P - P_prev||_inf < tol, then K = -(R + B^T P B)^{-1} B^T P A.
   // Sign convention: the returned K makes A + B K Schur (note the minus).
   (void)A;
@@ -317,7 +318,7 @@ double lipschitzBoundOnTube(
   const Eigen::VectorXd & z, const Polytope & Omega,
   const std::function<Eigen::VectorXd(const Eigen::VectorXd &)> & barrier_gradient)
 {
-  // TODO(deepseek): max ||grad h(z + v)||_2 over the vertices v of Omega. For
+  // TODO(deepseek §7): max ||grad h(z + v)||_2 over the vertices v of Omega. For
   // the quadratic barrier this is exact enough (the gradient is affine, so its
   // norm is maximised at a vertex).
   (void)z;
@@ -346,7 +347,7 @@ struct TubeMpcCbfSolver::Impl
   Eigen::MatrixXd z_previous; ///< Last nominal trajectory, for the z_0 policy.
   bool has_previous{false};
 
-  // TODO(deepseek): acados handles for the nominal solver (tube variant).
+  // TODO(deepseek §8): acados handles for the nominal solver (tube variant).
 };
 
 bool TubeMpcCbfSolution::usable() const
@@ -370,7 +371,7 @@ TubeMpcCbfSolver & TubeMpcCbfSolver::operator=(TubeMpcCbfSolver &&) noexcept = d
 
 bool TubeMpcCbfSolver::initialize()
 {
-  // TODO(deepseek), in this order (§4.3):
+  // TODO(deepseek §8.3), in this order:
   //  1. Validate the MPC/CBF configs exactly as MpcCbfSolver::initialize does.
   //  2. Build (A_lin, B_lin): exact for kDoubleIntegrator2D; for the nonlinear
   //     models linearise about the current reference (document the assumption
@@ -397,7 +398,7 @@ bool TubeMpcCbfSolver::isInitialized() const
 TubeMpcCbfSolution TubeMpcCbfSolver::solve(
   const Eigen::VectorXd & x0, const std::vector<ObstacleState> & obstacles)
 {
-  // TODO(deepseek) (§4.5):
+  // TODO(deepseek §8.5):
   //  1. Choose z_0. Default policy: z_0 = x0 on the first solve and whenever
   //     x0 - z_prev(1) leaves Omega; otherwise z_0 = z_prev(1) (the shifted
   //     nominal state). This is what makes the tube recursively feasible.
@@ -453,7 +454,7 @@ const Polytope & TubeMpcCbfSolver::tightenedInputSet() const
 double TubeMpcCbfSolver::tighteningFor(
   const Eigen::VectorXd & z, const ObstacleState & obstacle) const
 {
-  // TODO(deepseek) (§4.4):
+  // TODO(deepseek §8.4):
   //  kSupportFunction: for h(x) = ||P x - p_obs||^2 - r^2 the exact margin is
   //    sup_{e in Omega} [ -2 (P z - p_obs)^T P e - ||P e||^2 ]. The quadratic
   //    term is non-positive, so dropping it *over*-estimates the margin and is
@@ -481,7 +482,7 @@ const char * toString(TightenMode mode)
 
 bool parseTightenMode(const std::string & name, TightenMode & out)
 {
-  // TODO(deepseek): "support_function", "lipschitz", "none".
+  // TODO(deepseek §8): "support_function", "lipschitz", "none".
   (void)name;
   (void)out;
   throw std::logic_error("parseTightenMode not implemented");

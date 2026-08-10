@@ -2,7 +2,7 @@
 
 > **SKELETON.** Section headings and the statements to be proved are fixed; the prose and derivations are
 > `TODO`. This file is the readable summary; the full derivations live in `docs/derivations/*.tex`.
-> See `IMPLEMENTATION_GUIDE.md` §12.
+> See `.deepseek/13_DOCS.md` §13.1.
 
 ## Notation
 

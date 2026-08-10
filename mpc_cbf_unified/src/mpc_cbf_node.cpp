@@ -1,6 +1,7 @@
-// Copyright (c) 2026 Ali-Eimaan. MIT License.
+// Copyright (c) 2026, Ali-Eimaan. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 //
-// SKELETON — no implementation. See IMPLEMENTATION_GUIDE.md §6.
+// SKELETON — no implementation. See .deepseek/09_NODE.md.
 
 #include "mpc_cbf_unified/mpc_cbf_node.hpp"
 
@@ -12,7 +13,7 @@ namespace mpc_cbf_unified
 MpcCbfNode::MpcCbfNode(const rclcpp::NodeOptions & options)
 : rclcpp::Node("mpc_cbf_node", options)
 {
-  // TODO(deepseek): declareParameters(); loadParameters(); setupSolver();
+  // TODO(deepseek §9): declareParameters(); loadParameters(); setupSolver();
   // setupInterfaces(). On a failure in loadParameters or setupSolver, log
   // FATAL and call rclcpp::shutdown() — a controller that silently runs with a
   // fallback configuration is worse than one that refuses to start.
@@ -27,7 +28,7 @@ MpcCbfNode::~MpcCbfNode() = default;
 
 void MpcCbfNode::declareParameters()
 {
-  // TODO(deepseek): declare every key in config/mpc_cbf_params.yaml with a
+  // TODO(deepseek §9): declare every key in config/mpc_cbf_params.yaml with a
   // rcl_interfaces::msg::ParameterDescriptor carrying a description and, where
   // meaningful, a FloatingPointRange (gamma in (0,1], control_rate_hz > 0).
   // Mark `model`, `horizon` and `use_tube_mpc` read_only — changing them needs
@@ -37,7 +38,7 @@ void MpcCbfNode::declareParameters()
 
 bool MpcCbfNode::loadParameters()
 {
-  // TODO(deepseek): read parameters into mpc_config_/cbf_config_/tube_config_,
+  // TODO(deepseek §9): read parameters into mpc_config_/cbf_config_/tube_config_,
   // parse the enum strings with parseModelType/parseCbfVariant/parseTightenMode,
   // and register an on-set-parameters callback that accepts live changes to
   // gamma, the cost weights and safety_margin (reject everything else).
@@ -46,7 +47,7 @@ bool MpcCbfNode::loadParameters()
 
 bool MpcCbfNode::setupSolver()
 {
-  // TODO(deepseek): construct MpcCbfSolver or TubeMpcCbfSolver per
+  // TODO(deepseek §9): construct MpcCbfSolver or TubeMpcCbfSolver per
   // use_tube_mpc_ and return the result of initialize(). Log the resolved
   // configuration at INFO so a bag file records what was actually run.
   throw std::logic_error("MpcCbfNode::setupSolver not implemented");
@@ -54,7 +55,7 @@ bool MpcCbfNode::setupSolver()
 
 void MpcCbfNode::setupInterfaces()
 {
-  // TODO(deepseek): subscriptions on SensorDataQoS for odom/obstacles,
+  // TODO(deepseek §9): subscriptions on SensorDataQoS for odom/obstacles,
   // default QoS for goal; publishers as documented in the header; a wall timer
   // at control_rate_hz. Keep the timer in its own MutuallyExclusive callback
   // group so a slow solve cannot re-enter itself.
@@ -67,14 +68,14 @@ void MpcCbfNode::setupInterfaces()
 
 void MpcCbfNode::odomCallback(const nav_msgs::msg::Odometry::SharedPtr msg)
 {
-  // TODO(deepseek): lock state_mutex_, convert, store, stamp last_odom_stamp_.
+  // TODO(deepseek §9): lock state_mutex_, convert, store, stamp last_odom_stamp_.
   (void)msg;
   throw std::logic_error("MpcCbfNode::odomCallback not implemented");
 }
 
 void MpcCbfNode::goalCallback(const geometry_msgs::msg::PoseStamped::SharedPtr msg)
 {
-  // TODO(deepseek): convert the pose into a full state reference (zero velocity
+  // TODO(deepseek §9): convert the pose into a full state reference (zero velocity
   // targets, yaw from the quaternion) and push it to the solver.
   (void)msg;
   throw std::logic_error("MpcCbfNode::goalCallback not implemented");
@@ -88,7 +89,7 @@ void MpcCbfNode::obstacleCallback(const visualization_msgs::msg::MarkerArray::Sh
 
 void MpcCbfNode::controlLoop()
 {
-  // TODO(deepseek):
+  // TODO(deepseek §9):
   //  1. Copy the shared state under the lock; release before solving.
   //  2. If now - last_odom_stamp_ > odom_timeout_s: publish the fallback input,
   //     set diagnostics to ERROR ("odometry stale"), return.
@@ -100,7 +101,7 @@ void MpcCbfNode::controlLoop()
 
 void MpcCbfNode::handleSolverFailure(const MpcCbfSolution & solution)
 {
-  // TODO(deepseek): increment consecutive_failures_; apply `infeasible_policy`;
+  // TODO(deepseek §9): increment consecutive_failures_; apply `infeasible_policy`;
   // publish a DiagnosticStatus at WARN for the first failure and ERROR from
   // `max_consecutive_failures` onward, carrying
   // solution.diagnostics.infeasibility_reason and first_active_cbf_step as
@@ -116,7 +117,7 @@ void MpcCbfNode::handleSolverFailure(const MpcCbfSolution & solution)
 
 Eigen::VectorXd MpcCbfNode::stateFromOdometry(const nav_msgs::msg::Odometry & msg) const
 {
-  // TODO(deepseek): per ModelType —
+  // TODO(deepseek §9): per ModelType —
   //   kDoubleIntegrator2D: [px, py, vx, vy] with the twist rotated into the
   //                        odom frame (nav_msgs twist is body-frame).
   //   kUnicycle2D:         [px, py, yaw]
@@ -129,7 +130,7 @@ Eigen::VectorXd MpcCbfNode::stateFromOdometry(const nav_msgs::msg::Odometry & ms
 std::vector<ObstacleState> MpcCbfNode::obstaclesFromMarkers(
   const visualization_msgs::msg::MarkerArray & msg) const
 {
-  // TODO(deepseek): SPHERE/CYLINDER only, radius = scale.x / 2, is_dynamic
+  // TODO(deepseek §9): SPHERE/CYLINDER only, radius = scale.x / 2, is_dynamic
   // when the marker's frame_locked flag is false and a velocity is encoded in
   // the marker's `points` field (document the convention in the launch file).
   (void)msg;
@@ -138,7 +139,7 @@ std::vector<ObstacleState> MpcCbfNode::obstaclesFromMarkers(
 
 geometry_msgs::msg::TwistStamped MpcCbfNode::twistFromInput(const Eigen::VectorXd & u) const
 {
-  // TODO(deepseek): unicycle -> linear.x = u(0), angular.z = u(1); double
+  // TODO(deepseek §9): unicycle -> linear.x = u(0), angular.z = u(1); double
   // integrator -> publish accelerations in linear.x/linear.y and let the plant
   // integrate (document this in the launch file).
   (void)u;
@@ -157,7 +158,7 @@ void MpcCbfNode::publishPredictedPath(const Eigen::MatrixXd & x_pred)
 
 void MpcCbfNode::publishCbfValues(const SolverDiagnostics & diagnostics)
 {
-  // TODO(deepseek): pack cbf_values with a MultiArrayLayout describing the
+  // TODO(deepseek §9): pack cbf_values with a MultiArrayLayout describing the
   // (stage, obstacle) shape, so plotjuggler can slice it.
   (void)diagnostics;
   throw std::logic_error("MpcCbfNode::publishCbfValues not implemented");
@@ -165,7 +166,7 @@ void MpcCbfNode::publishCbfValues(const SolverDiagnostics & diagnostics)
 
 void MpcCbfNode::publishDiagnostics(const MpcCbfSolution & solution)
 {
-  // TODO(deepseek): one DiagnosticStatus named "mpc_cbf": solve_time_ms,
+  // TODO(deepseek §9): one DiagnosticStatus named "mpc_cbf": solve_time_ms,
   // sqp_iterations, kkt_residual, min h over the horizon, status string.
   // Level WARN when solve_time_ms exceeds 80% of the control period.
   (void)solution;
@@ -176,7 +177,7 @@ void MpcCbfNode::publishDiagnostics(const MpcCbfSolution & solution)
 
 int main(int argc, char ** argv)
 {
-  // TODO(deepseek): rclcpp::init; spin an MpcCbfNode on a SingleThreadedExecutor;
+  // TODO(deepseek §9): rclcpp::init; spin an MpcCbfNode on a SingleThreadedExecutor;
   // rclcpp::shutdown. Catch std::exception around the constructor and log FATAL.
   (void)argc;
   (void)argv;

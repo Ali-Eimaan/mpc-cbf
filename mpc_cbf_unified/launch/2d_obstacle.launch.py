@@ -4,14 +4,14 @@ Brings up mpc_cbf_node with the double-integrator model against one static
 obstacle at (0.5, 0.5) between start (0, 0) and goal (1, 1) — the exact
 scenario reproduced in reproduction/zeng_acc2021/reproduce_acc2021.ipynb.
 
-Implement per IMPLEMENTATION_GUIDE.md §7.
+Implement per .deepseek/09_NODE.md §9.7.
 """
 
 from launch import LaunchDescription
 
 
 def generate_launch_description() -> LaunchDescription:
-    # TODO(deepseek): assemble and return the description.
+    # TODO(deepseek §9.7): assemble and return the description.
     #
     # Launch arguments (all with defaults, all documented):
     #   gamma            float  0.3     forwarded to the node

@@ -14,14 +14,14 @@ Usage (target CLI):
         --horizon 8 --dt 0.1 --n-obstacles 4
     python generate_tube_solver.py --all
 
-Implement per IMPLEMENTATION_GUIDE.md §2.5 and §4.
+Implement per .deepseek/05_CODEGEN.md §5.7 and .deepseek/08_TUBE.md.
 """
 
 from __future__ import annotations
 
 import argparse
 
-# TODO(deepseek):
+# TODO(deepseek §5.7):
 #   import numpy as np, casadi as ca
 #   from acados_template import AcadosOcp, AcadosOcpSolver
 #   from models import MODEL_REGISTRY, discretise, barrier_expression, linearised_discrete
@@ -33,7 +33,7 @@ DEFAULT_OUTPUT_DIR = "c_generated_code"
 def compute_offline_sets(model_name: str, dt: float, disturbance_box, lqr_q, lqr_r):
     """Reference (Python) implementation of the offline tube computation.
 
-    TODO(deepseek): mirror the C++ path — discreteLqrGain, then the Rakovic
+    TODO(deepseek §5.7): mirror the C++ path — discreteLqrGain, then the Rakovic
     mRPI iteration — using scipy.linalg.solve_discrete_are and polytope
     arithmetic in numpy. Its purpose is to CHECK the C++ implementation:
     test_tube_mpc_robustness.cpp asserts the two agree on Omega's support
@@ -53,7 +53,7 @@ def build_tube_ocp(
 ):
     """Return the AcadosOcp for the nominal tube problem.
 
-    TODO(deepseek):
+    TODO(deepseek §5.7):
       1. Same model/cost as the nominal generator, with (z, v) naming.
       2. Parameter vector extended by one tightening scalar per (obstacle,
          stage): p = [obstacle block ...] + [gamma] + [c_{k,j} ...]. The C++
@@ -61,7 +61,7 @@ def build_tube_ocp(
       3. DCBF row becomes
              h(F(z_k, v_k)) - h(z_k) + gamma * (h(z_k) - c_{k,j}) >= 0
          and the distance row becomes h(z_k) - c_{k,j} >= 0.
-         Deriving why the tightening enters both rows is in §4.4 — read it
+         Deriving why the tightening enters both rows is in .deepseek/08_TUBE.md §8.4 — read it
          before touching the sign.
       4. Bounds come in already tightened from the caller; this script must not
          recompute them (single source of truth is the C++ initialize()).
@@ -70,13 +70,13 @@ def build_tube_ocp(
 
 
 def generate(output_dir: str = DEFAULT_OUTPUT_DIR, **kwargs) -> str:
-    """TODO(deepseek): as in generate_mpc_cbf_solver.generate, with solver names
+    """TODO(deepseek §5.7): as in generate_mpc_cbf_solver.generate, with solver names
     prefixed "tube_mpc_cbf_"."""
     raise NotImplementedError
 
 
 def generate_all(output_dir: str = DEFAULT_OUTPUT_DIR) -> list[str]:
-    """TODO(deepseek): (double_integrator_2d, N=8, support_function) and the
+    """TODO(deepseek §5.7): (double_integrator_2d, N=8, support_function) and the
     tighten_mode="none" ablation used by the robustness sweep."""
     raise NotImplementedError
 

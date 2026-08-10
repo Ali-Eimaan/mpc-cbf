@@ -1,10 +1,10 @@
-cmake_minimum_required(VERSION 3.16)
+cmake_minimum_required(VERSION 3.22...3.31)
 project(mpc_cbf_unified)
 
 # SKELETON NOTE ---------------------------------------------------------------
 # The build graph below is complete and intended to be kept as-is. Only the
-# blocks marked TODO(deepseek) need editing once acados-generated sources exist.
-# See IMPLEMENTATION_GUIDE.md §2 for the acados discovery contract.
+# blocks marked TODO(deepseek §3.3) need editing once acados-generated sources exist.
+# See .deepseek/03_BUILD_SYSTEM.md §3.2 for the acados discovery contract.
 # -----------------------------------------------------------------------------
 
 if(NOT CMAKE_CXX_STANDARD)
@@ -13,7 +13,8 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  add_compile_options(-Wall -Wextra -Wpedantic)
+  # -Wshadow/-Wconversion are deliberate: see .deepseek/03_BUILD_SYSTEM.md §3.5.
+  add_compile_options(-Wall -Wextra -Wpedantic -Wshadow -Wconversion)
 endif()
 
 find_package(ament_cmake REQUIRED)
@@ -42,7 +43,7 @@ set(ACADOS_ROOT $ENV{ACADOS_SOURCE_DIR})
 if(ACADOS_ROOT)
   message(STATUS "mpc_cbf_unified: acados found at ${ACADOS_ROOT}")
   set(MPC_CBF_WITH_ACADOS TRUE)
-  # TODO(deepseek): after running codegen, point these at the generated tree.
+  # TODO(deepseek §3.3): after running codegen, point these at the generated tree.
   #   set(ACADOS_GENERATED_DIR ${CMAKE_CURRENT_SOURCE_DIR}/../codegen/c_generated_code)
   #   file(GLOB ACADOS_GENERATED_SOURCES ${ACADOS_GENERATED_DIR}/*.c
   #                                      ${ACADOS_GENERATED_DIR}/**/*.c)

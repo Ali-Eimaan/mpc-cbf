@@ -5,14 +5,14 @@ cannot avoid an obstacle approaching faster than its reaction horizon, while
 MPC-CBF with N = 15 does. Runs the planar-quadrotor model so the result is not
 trivially a double-integrator artefact.
 
-Implement per IMPLEMENTATION_GUIDE.md §7.
+Implement per .deepseek/09_NODE.md §9.7.
 """
 
 from launch import LaunchDescription
 
 
 def generate_launch_description() -> LaunchDescription:
-    # TODO(deepseek): assemble and return the description.
+    # TODO(deepseek §9.7): assemble and return the description.
     #
     # Launch arguments:
     #   controller        str   mpc_cbf | cbf_qp   (cbf_qp == horizon 1,

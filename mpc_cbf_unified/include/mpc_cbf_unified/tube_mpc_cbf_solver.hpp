@@ -1,6 +1,7 @@
-// Copyright (c) 2026 Ali-Eimaan. MIT License.
+// Copyright (c) 2026, Ali-Eimaan. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 //
-// SKELETON — declarations only. See IMPLEMENTATION_GUIDE.md §4.
+// SKELETON — declarations only. See .deepseek/08_TUBE.md.
 //
 // Tube MPC-CBF: robust safety for
 //     x_{k+1} = f(x_k, u_k) + w_k,   w_k in W (compact, contains 0)
@@ -100,7 +101,7 @@ public:
   bool isInitialized() const;
 
   /// Solve for the current *true* state. The nominal state z_0 is chosen per
-  /// §4.5 (initial-state strategy), not simply set to x0.
+  /// §8.5 (initial-state strategy), not simply set to x0.
   TubeMpcCbfSolution solve(const Eigen::VectorXd & x0, const std::vector<ObstacleState> & obstacles);
 
   void setReference(const Eigen::VectorXd & x_ref);

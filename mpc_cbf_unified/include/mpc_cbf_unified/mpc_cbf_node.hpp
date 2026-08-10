@@ -1,8 +1,9 @@
-// Copyright (c) 2026 Ali-Eimaan. MIT License.
+// Copyright (c) 2026, Ali-Eimaan. All rights reserved.
+// SPDX-License-Identifier: BSD-3-Clause
 //
-// SKELETON — declarations only. See IMPLEMENTATION_GUIDE.md §6.
+// SKELETON — declarations only. See .deepseek/09_NODE.md.
 //
-// ROS 2 (Jazzy) wrapper around MpcCbfSolver / TubeMpcCbfSolver.
+// ROS 2 (Lyrical Luth) wrapper around MpcCbfSolver / TubeMpcCbfSolver.
 
 #ifndef MPC_CBF_UNIFIED__MPC_CBF_NODE_HPP_
 #define MPC_CBF_UNIFIED__MPC_CBF_NODE_HPP_
@@ -40,7 +41,7 @@ namespace mpc_cbf_unified
 ///   pub  /diagnostics      diagnostic_msgs/DiagnosticArray  solver health
 ///
 /// Parameters are declared in config/mpc_cbf_params.yaml and
-/// config/tube_mpc_params.yaml; see §6.2 for the full list and validation rules.
+/// config/tube_mpc_params.yaml; see §9.2 for the full list and validation rules.
 class MpcCbfNode : public rclcpp::Node
 {
 public:
@@ -72,7 +73,7 @@ private:
 
   /// Handle a non-usable solve: apply the fallback policy selected by
   /// `infeasible_policy` (hold_last | zero | brake | previous_horizon) and
-  /// raise the diagnostic level. See §6.4.
+  /// raise the diagnostic level. See §9.4.
   void handleSolverFailure(const MpcCbfSolution & solution);
 
   // -- conversions ---------------------------------------------------------

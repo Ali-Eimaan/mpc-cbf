@@ -11,14 +11,14 @@ Usage (target CLI, to be implemented):
         --horizon 8 --dt 0.1 --variant fixed_decay --n-obstacles 8
     python generate_mpc_cbf_solver.py --all      # every combination CI needs
 
-Implement per IMPLEMENTATION_GUIDE.md §2.
+Implement per .deepseek/05_CODEGEN.md.
 """
 
 from __future__ import annotations
 
 import argparse
 
-# TODO(deepseek):
+# TODO(deepseek §5):
 #   import numpy as np, casadi as ca
 #   from acados_template import AcadosOcp, AcadosOcpSolver, AcadosModel
 #   from models import MODEL_REGISTRY, discretise, barrier_expression, dcbf_constraint
@@ -29,9 +29,9 @@ DEFAULT_OUTPUT_DIR = "c_generated_code"
 def build_acados_model(model_name: str, dt: float, n_obstacles: int):
     """Assemble the AcadosModel: symbolic state, input, parameters, discrete dynamics.
 
-    TODO(deepseek):
+    TODO(deepseek §5):
       - x, u from the ModelSpec; p = obstacle block (7 entries per obstacle,
-        see §3.5) + [gamma] (+ nothing else — keep the layout documented in one
+        see .deepseek/05_CODEGEN.md §5.3) + [gamma] (+ nothing else — keep the layout documented in one
         place and mirrored by the C++ side).
       - model.disc_dyn_expr = discretise(spec, dt) so acados uses the
         DISCRETE integrator type; this is a discrete-time formulation and using
@@ -53,7 +53,7 @@ def build_ocp(
 ):
     """Return a fully configured AcadosOcp.
 
-    TODO(deepseek), in order:
+    TODO(deepseek §5), in order:
       1. ocp.model = build_acados_model(...); ocp.dims.N = horizon.
       2. Cost: NONLINEAR_LS with y = [x; u], y_e = [x]; W = blkdiag(Q, R),
          W_e = Qf. Weights are runtime-settable through the solver API, so pick
@@ -88,7 +88,7 @@ def build_ocp(
 def generate(output_dir: str = DEFAULT_OUTPUT_DIR, **kwargs) -> str:
     """Generate C code and return the path to the generated directory.
 
-    TODO(deepseek): AcadosOcpSolver(ocp, json_file=...) with
+    TODO(deepseek §5): AcadosOcpSolver(ocp, json_file=...) with
     `generate=True, build=True`; move/point the output at `output_dir`; print
     the resulting solver name so CMake and CI logs record exactly what was
     built.
@@ -99,20 +99,20 @@ def generate(output_dir: str = DEFAULT_OUTPUT_DIR, **kwargs) -> str:
 def generate_all(output_dir: str = DEFAULT_OUTPUT_DIR) -> list[str]:
     """Generate every configuration the tests and launch files need.
 
-    TODO(deepseek): the matrix is
+    TODO(deepseek §5): the matrix is
       (double_integrator_2d, N=8,  fixed_decay)     <- 2d_obstacle, gtests
       (double_integrator_2d, N=3,  distance_only)   <- MPC-DC baseline
       (double_integrator_2d, N=8,  relaxed_decay)   <- CDC 2021
       (bicycle_kinematic,    N=11, fixed_decay)     <- car_racing
       (quadrotor_planar,     N=15, fixed_decay)     <- dynamic obstacle demo
       (quadrotor_planar,     N=1,  fixed_decay)     <- CBF-QP baseline
-    Keep this list in sync with §2.4 of the guide; CI builds exactly these.
+    Keep this list in sync with §5.6 of .deepseek/05_CODEGEN.md; CI builds exactly these.
     """
     raise NotImplementedError
 
 
 def parse_args() -> argparse.Namespace:
-    """TODO(deepseek): the flags shown in the module docstring, plus --output-dir,
+    """TODO(deepseek §5): the flags shown in the module docstring, plus --output-dir,
     --rti and --all."""
     raise NotImplementedError
 
