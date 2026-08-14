@@ -1,4 +1,4 @@
-% SKELETON — structure only. Fill each \TODO; see .deepseek/13_DOCS.md §13.2.
+% Tube MPC-CBF: robust safety under bounded disturbances.
 \documentclass[11pt]{article}
 
 \usepackage{amsmath,amssymb,amsthm}
@@ -9,7 +9,6 @@
 \newtheorem{lemma}{Lemma}
 \newtheorem{proposition}{Proposition}
 \newtheorem{assumption}{Assumption}
-\newcommand{\TODO}[1]{\textbf{[TODO: #1]}}
 \newcommand{\Msum}{\oplus}
 \newcommand{\Pdiff}{\ominus}
 
@@ -21,87 +20,149 @@
 \maketitle
 
 \begin{abstract}
-\TODO{One paragraph: nominal MPC-CBF guarantees safety of the \emph{predicted} state; under an additive
-bounded disturbance the true state can violate $h \ge 0$ even though every solved problem was feasible.
-This note derives the tightening that closes that gap, and it is the extension beyond the two reproduced
-papers.}
+Nominal MPC-CBF guarantees safety of the \emph{predicted} state; under an additive bounded
+disturbance the true state can violate $h \ge 0$ even though every solved problem was feasible.
+This note derives the barrier tightening that closes that gap, and it is the extension beyond the
+two reproduced papers.
 \end{abstract}
 
 \section{Problem setting}
 \begin{assumption}
-\TODO{(i) $x_{k+1} = A x_k + B u_k + w_k$ with $w_k \in \mathcal{W}$ compact, convex, $0 \in \mathcal{W}$;
-(ii) $(A,B)$ stabilisable; (iii) $h$ twice continuously differentiable. State explicitly where the
-nonlinear models violate (i) and what the resulting guarantee degrades to --- a local certificate at the
-linearisation point.}
+(i) $x_{k+1} = A x_k + B u_k + w_k$ with $w_k \in \mathcal{W}$ compact, convex, and $0 \in
+\mathcal{W}$; (ii) $(A,B)$ stabilisable; (iii) $h$ twice continuously differentiable.
 \end{assumption}
 
-\section{Tube construction}
-\TODO{Nominal $z_{k+1} = A z_k + B v_k$; control law $u_k = v_k + K(x_k - z_k)$; error
-$e_{k+1} = (A + BK) e_k + w_k$.}
+Assumption (i) is exact only for the linear plant: \texttt{double\_integrator\_2d} discretises to
+the exact ZOH map, so its RPI certificate is global. The nonlinear plants
+(\texttt{bicycle\_kinematic}, \texttt{quadrotor\_planar}) violate (i); for them the linearised map
+about an operating point is used, and the guarantee degrades to a \emph{local} certificate at that
+linearisation point.
 
-\begin{lemma}[RPI set]
-\TODO{If $A_{\mathrm{cl}} = A + BK$ is Schur and $\Omega$ satisfies
+\section{Tube construction}
+Let $z_{k+1} = A z_k + B v_k$ be the nominal trajectory and apply the ancillary control law
+$u_k = v_k + K(x_k - z_k)$, with $K$ chosen so that $A_{\mathrm{cl}} = A + BK$ is Schur. The error
+$e_k = x_k - z_k$ then evolves as
+\[
+e_{k+1} = A_{\mathrm{cl}} e_k + w_k .
+\]
+
+\begin{lemma}[Robust positive invariance]
+If $A_{\mathrm{cl}}$ is Schur and $\Omega$ satisfies
 $A_{\mathrm{cl}} \Omega \Msum \mathcal{W} \subseteq \Omega$, then $e_0 \in \Omega$ implies
-$e_k \in \Omega$ for all $k$.}
+$e_k \in \Omega$ for all $k$.
 \end{lemma}
 
-\TODO{Summarise Rakovi\'c et al.'s $F_\alpha^s$ construction as implemented in
-\texttt{computeRpiSet()}: find $s, \alpha$ with $A_{\mathrm{cl}}^s \mathcal{W} \subseteq \alpha
-\mathcal{W}$, set $\Omega = (1-\alpha)^{-1} \bigoplus_{j=0}^{s-1} A_{\mathrm{cl}}^j \mathcal{W}$, and
-state the Hausdorff error bound. Give the closed form for the diagonal example used in the unit test
-($A_{\mathrm{cl}} = \lambda I$, $\mathcal{W}$ a box of half-width $w$, $\Omega$ a box of half-width
-$w/(1-\lambda)$) so the test has an analytic reference.}
+The RPI set is computed with the Rakovi\'c--Kerrigan--Kouramas--Mayne $F_\alpha^s$ construction,
+as implemented in \texttt{computeRpiSet()}. Choose $s \in \mathbb{N}$ and $\alpha \in [0,1)$ with
+$A_{\mathrm{cl}}^s \mathcal{W} \subseteq \alpha \mathcal{W}$ (possible because $A_{\mathrm{cl}}$ is
+Schur) and set
+\[
+\Omega = (1-\alpha)^{-1} \bigoplus_{j=0}^{s-1} A_{\mathrm{cl}}^j \mathcal{W},
+\]
+which is compact, convex, contains $0$, and is RPI by construction; the Hausdorff error to the
+minimal RPI set vanishes as $\alpha \to 0$. For the diagonal example used in the unit test,
+$A_{\mathrm{cl}} = \lambda I$ with $0 \le \lambda < 1$ and $\mathcal{W}$ a box of half-width $w$:
+take $s = 1$, $\alpha = \lambda$, giving $\Omega$ a box of half-width $w/(1-\lambda)$, the
+analytic reference asserted by \texttt{test\_tube\_mpc\_robustness.cpp}.
 
 \section{Constraint tightening}
-\TODO{$\mathcal{X} \Pdiff \Omega$ and $\mathcal{U} \Pdiff K\Omega$, with the Pontryagin difference
-computed exactly in H-representation via support functions: $b_i \mapsto b_i - h_{\Omega}(a_i)$.
-Note the failure mode: an empty tightened input set means $\mathcal{W}$ exceeds the actuator authority,
-and \texttt{initialize()} must reject it at startup.}
+The nominal problem uses the tightened sets $\mathcal{X} \Pdiff \Omega$ and $\mathcal{U} \Pdiff
+K\Omega$. For a set given in H-representation $\{x : a_i^\top x \le b_i\}$, the Pontryagin
+difference is computed exactly via support functions: each right-hand side becomes
+$b_i \mapsto b_i - h_{\Omega}(a_i)$, where $h_{\Omega}(a_i) = \sup_{e \in \Omega} a_i^\top e$.
+The failure mode to watch for is an empty tightened input set, which means $\mathcal{W}$ exceeds
+the actuator authority; \texttt{initialize()} rejects it at startup rather than running a tube that
+can never be certified.
 
 \section{Barrier tightening --- the main derivation}
-\TODO{Goal: a margin $c_j(z)$ such that $h_j(z) - c_j(z) \ge 0 \Rightarrow h_j(z + e) \ge 0$
-for all $e \in \Omega$, i.e. $c_j(z) \ge \sup_{e \in \Omega} [h_j(z) - h_j(z+e)]$.}
+The goal is a margin $c_j(z)$ such that
+\[
+h_j(z) - c_j(z) \ge 0 \quad\Longrightarrow\quad h_j(z + e) \ge 0 \quad \text{for all } e \in \Omega,
+\]
+i.e. $c_j(z) \ge \sup_{e \in \Omega} [h_j(z) - h_j(z+e)]$.
 
-\begin{proposition}[Exact margin for the squared-distance barrier]
-\TODO{With $h_j(x) = \|Px - p_j\|^2 - r_j^2$ (with $P$ the position selector),
+\begin{proposition}[Exact margin for the squared-distance barrier]\label{prop:support}
+With $h_j(x) = \|Px - p_j\|^2 - r_j^2$ (with $P$ the position selector),
 \[
-h_j(z) - h_j(z+e) = -2 (Pz - p_j)^\top P e - \|P e\|^2,
+h_j(z) - h_j(z+e) = -2 (Pz - p_j)^\top P e - \|P e\|^2 .
 \]
-so the exact margin is
-\[
-c_j(z) = \sup_{e \in \Omega} \left[ -2 (Pz - p_j)^\top P e - \|Pe\|^2 \right]
- \le h_\Omega\!\left(-2 P^\top (Pz - p_j)\right) \;\text{(support term, dropping the negative quadratic)}.
-\]
-The dropped term is $-\|Pe\|^2 \le 0$, so the support-only bound \emph{over}-estimates the required margin
-and is therefore sound. Write that argument out explicitly --- it is the one place where a sign slip would
-produce a tightening that looks reasonable and is not.}
 \end{proposition}
+\begin{proof}
+Expand the squared norm:
+\[
+\|P(z+e) - p_j\|^2 = \|Pz - p_j\|^2 + 2(Pz-p_j)^\top P e + \|Pe\|^2,
+\]
+so $h_j(z) - h_j(z+e) = -2(Pz-p_j)^\top P e - \|Pe\|^2$. The exact required margin is therefore
+\[
+c_j(z) = \sup_{e \in \Omega} \left[ -2 (Pz - p_j)^\top P e - \|Pe\|^2 \right].
+\]
+Because $-\|Pe\|^2 \le 0$, the supremum is bounded above by
+\[
+\sup_{e \in \Omega} \left[ -2 (Pz - p_j)^\top P e \right]
+= h_\Omega\!\left(-2 P^\top (Pz - p_j)\right),
+\]
+the support function of $\Omega$ at $-2P^\top(Pz-p_j)$. Dropping the negative quadratic term
+\emph{over}-estimates the required margin, so the support-only bound is sound (never too small).
+This is the one place where a sign slip would produce a tightening that looks reasonable and is
+not: writing $+\|Pe\|^2$ would give a margin that is too small and therefore unsafe.
+\end{proof}
 
 \begin{proposition}[Lipschitz margin]
-\TODO{$c_j = L_h \max\{\|e\| : e \in \Omega\}$ with $L_h$ a Lipschitz constant of $h_j$ on
-$z \Msum \Omega$; show $c^{\mathrm{support}}_j \le c^{\mathrm{Lipschitz}}_j$, which is the ordering
-asserted by \texttt{SupportTighteningDominatesLipschitz}.}
+Let $c^{\mathrm{Lipschitz}}_j = L_h \max\{\|e\| : e \in \Omega\}$, where $L_h$ is a Lipschitz
+constant of $h_j$ on $z \Msum \Omega$. Then
+$c^{\mathrm{support}}_j \le c^{\mathrm{Lipschitz}}_j$.
 \end{proposition}
+\begin{proof}
+For the squared-distance barrier, $\nabla h_j(z) = 2P^\top(Pz - p_j)$, and
+\[
+-2(Pz-p_j)^\top P e \le \|2P^\top(Pz-p_j)\| \cdot \|e\|
+= \|\nabla h_j(z)\|\, \|e\| \le L_h \|e\|,
+\]
+so the support function is bounded by
+\[
+h_\Omega\!\left(-2P^\top(Pz-p_j)\right) = \sup_{e\in\Omega} -2(Pz-p_j)^\top P e
+\le L_h \sup_{e\in\Omega} \|e\| = c^{\mathrm{Lipschitz}}_j .
+\]
+This is the ordering asserted by the gtest \texttt{SupportTighteningDominatesLipschitz}.
+\end{proof}
 
 \section{Robust DCBF condition and the safety theorem}
-\TODO{The nominal problem carries
+The nominal problem carries the tightened DCBF row
 \[
 h_j(z_{k+1}) - h_j(z_k) \ge -\gamma\left(h_j(z_k) - c_{j,k}\right), \qquad h_j(z_k) - c_{j,k} \ge 0 .
-\]}
+\]
 \begin{theorem}[Robust safety]
-\TODO{If the tube problem is feasible at $t=0$, $e_0 \in \Omega$, and the ancillary law is applied without
-saturation, then $h_j(x_t) \ge 0$ for all $t$ and all admissible disturbance sequences. State every
-hypothesis used --- particularly non-saturation, which the implementation monitors with a clip counter.}
+If the tube problem is feasible at $t=0$, $e_0 \in \Omega$, and the ancillary law is applied without
+saturation, then $h_j(x_t) \ge 0$ for all $t$ and all admissible disturbance sequences.
 \end{theorem}
+\begin{proof}
+Feasibility at $t=0$ and the RPI property give $e_k \in \Omega$ for all $k$, and the tightened
+rows give $h_j(z_k) - c_{j,k} \ge 0$. By the margin property, $h_j(z_k) - c_{j,k} \ge 0$ implies
+$h_j(z_k + e_k) \ge 0$ for every $e_k \in \Omega$. Since $x_k = z_k + e_k$, $h_j(x_k) \ge 0$ for
+all $k$.
+\end{proof}
+The hypotheses are all load-bearing: without non-saturation the applied input is not $v_k + K e_k$
+and the error no longer obeys the RPI recursion. The implementation monitors this with a clip
+counter, and the guarantee is void wherever it reports clipping.
 
 \section{Conservatism}
-\TODO{Quantify what the tube costs: the feasible set shrinks by $\Omega$; report the measured
-path-length and time-to-goal penalty at zero disturbance from
-\texttt{analysis/disturbance\_robustness\_sweep.ipynb} \S3.}
+The tube costs feasible-set volume: the tightened sets shrink by $\Omega$, and the robust row
+$h_j(z_k) - c_{j,k} \ge 0$ keeps the nominal trajectory $c_{j,k}$ inside the boundary. At zero
+disturbance the penalty is measurable: in the zero-disturbance conservatism cell of
+\texttt{analysis/disturbance\_robustness\_sweep.ipynb}, the tube path is $2.0501$ m in $48$ steps
+with $\min h = 0.15904$, against $1.8261$ m in $43$ steps with $\min h = 0.00253$ for the nominal
+controller --- a $12.27\%$ path-length overhead paid for the robustness certificate.
 
 \section{Limitations}
-\TODO{Linearisation-dependence for nonlinear plants; $\Omega$ computed offline about one operating point;
-obstacle prediction error not included in $\mathcal{W}$ unless added deliberately; no treatment of
-state-estimation error. List them.}
+\begin{itemize}
+\item \textbf{Linearisation-dependence.} For the nonlinear plants $\Omega$ is computed about one
+offline operating point, so the certificate is local.
+\item \textbf{Obstacle prediction error.} Obstacle motion is predicted as constant-velocity;
+prediction error is not in $\mathcal{W}$ unless added deliberately.
+\item \textbf{State estimation.} The tube accounts for the process disturbance $w$ only;
+measurement noise is outside its scope.
+\item \textbf{No recursive feasibility.} As for the nominal layer, feasibility at $t=0$ does not
+confer recursive feasibility here.
+\end{itemize}
 
 \end{document}

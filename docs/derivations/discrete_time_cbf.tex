@@ -1,4 +1,4 @@
-% SKELETON — structure only. Fill each \TODO; see .deepseek/13_DOCS.md §13.2.
+% Discrete-Time Control Barrier Functions: definition and forward invariance.
 % Compile: pdflatex discrete_time_cbf.tex   (CI compiles all files in this dir)
 \documentclass[11pt]{article}
 
@@ -10,7 +10,6 @@
 \newtheorem{theorem}{Theorem}
 \newtheorem{proposition}{Proposition}
 \newtheorem{lemma}{Lemma}
-\newcommand{\TODO}[1]{\textbf{[TODO: #1]}}
 
 \title{Discrete-Time Control Barrier Functions}
 \author{Ali-Eimaan}
@@ -20,62 +19,156 @@
 \maketitle
 
 \begin{abstract}
-\TODO{Two sentences: what is defined here, and which repository components depend on it
-(\texttt{codegen/models.py::dcbf\_constraint}, \texttt{MpcCbfSolver::barrierValue}).}
+We define the discrete-time control barrier function (DCBF) and prove the forward-invariance
+result that underpins every safety guarantee in this repository. Two repository components depend
+on the definition: \texttt{codegen/models.py::dcbf\_constraint} implements the linear
+specialisation, and \texttt{MpcCbfSolver::barrierValue} evaluates the squared-distance barrier
+that is the repository's single definition of $h$.
 \end{abstract}
 
 \section{Setup and notation}
-\TODO{System $x_{k+1} = f(x_k, u_k)$ with $f : \mathcal{X} \times \mathcal{U} \to \mathcal{X}$ locally
-Lipschitz; safe set $\mathcal{C} = \{x \in \mathcal{X} : h(x) \ge 0\}$ with $h$ continuously
-differentiable; class-$\mathcal{K}$ conventions. Keep every symbol identical to
-\texttt{docs/README\_math.md}.}
+Consider the discrete-time system $x_{k+1} = f(x_k, u_k)$ with $f : \mathcal{X} \times
+\mathcal{U} \to \mathcal{X}$ locally Lipschitz, state $x_k \in \mathcal{X} \subseteq
+\mathbb{R}^n$ and input $u_k \in \mathcal{U} \subseteq \mathbb{R}^m$. The safe set is
+$\mathcal{C} = \{x \in \mathcal{X} : h(x) \ge 0\}$ for a continuously differentiable barrier
+$h : \mathcal{X} \to \mathbb{R}$. A function $\alpha : \mathbb{R}_{\ge 0} \to \mathbb{R}_{\ge 0}$
+is class-$\mathcal{K}$ if it is continuous, strictly increasing, and $\alpha(0) = 0$. All symbols
+are identical to \texttt{docs/README\_math.md}.
 
 \section{Definition}
 \begin{definition}[Discrete-time CBF]
-\TODO{State: $h$ is a DCBF if there exists $\alpha \in \mathcal{K}$ with $\alpha(r) \le r$ such that
-$\sup_{u \in \mathcal{U}} \left[ h(f(x,u)) - h(x) \right] \ge -\alpha(h(x))$ for all $x \in \mathcal{C}$.
-Add the remark explaining why $\alpha(r) \le r$ is required rather than merely convenient.}
+$h$ is a discrete-time control barrier function (DCBF) for $x_{k+1} = f(x_k, u_k)$ on
+$\mathcal{C}$ if there exists a class-$\mathcal{K}$ function $\alpha$ with $\alpha(r) \le r$ for
+all $r \ge 0$ such that
+\[
+\sup_{u \in \mathcal{U}} \left[ h(f(x,u)) - h(x) \right] \ge -\alpha(h(x))
+\qquad \text{for all } x \in \mathcal{C}.
+\]
 \end{definition}
 
+\begin{remark}
+The bound $\alpha(r) \le r$ is required, not merely convenient: without it the induction in
+Theorem~\ref{thm:invariance} cannot use $h(x_k) \ge 0$ to conclude $h(x_{k+1}) \ge 0$. A
+class-$\mathcal{K}$ function with $\alpha(r) > r$ would make the one-step condition weaker than
+the invariance claim it is meant to license.
+\end{remark}
+
 \section{Forward invariance}
-\begin{theorem}[Invariance of $\mathcal{C}$]
-\TODO{If $h$ is a DCBF and $u_k$ satisfies the DCBF inequality at every $k$, then $x_0 \in \mathcal{C}$
-implies $x_k \in \mathcal{C}$ for all $k \ge 0$.}
+\begin{theorem}[Invariance of $\mathcal{C}$]\label{thm:invariance}
+If $h$ is a DCBF and, at every step, $u_k$ satisfies the DCBF inequality, then
+$x_0 \in \mathcal{C}$ implies $x_k \in \mathcal{C}$ for all $k \ge 0$.
 \end{theorem}
 \begin{proof}
-\TODO{Induction on $k$: $h(x_{k+1}) \ge h(x_k) - \alpha(h(x_k)) \ge 0$ using $\alpha(r) \le r$ and
-$h(x_k) \ge 0$. Two lines; write them out, they are the load-bearing step.}
+By induction on $k$. The base case is $x_0 \in \mathcal{C}$ by hypothesis, i.e. $h(x_0) \ge 0$.
+For the step, the DCBF inequality evaluated at $x_k$ gives
+\[
+h(x_{k+1}) = h(f(x_k, u_k)) \ge h(x_k) - \alpha(h(x_k)),
+\]
+and since $h(x_k) \ge 0$ and $\alpha(r) \le r$ for all $r \ge 0$,
+\[
+h(x_{k+1}) \ge h(x_k) - h(x_k) = 0.
+\]
+Thus $x_{k+1} \in \mathcal{C}$, completing the induction.
 \end{proof}
 
 \section{Linear class-$\mathcal{K}$ specialisation}
-\TODO{Set $\alpha(r) = \gamma r$, $\gamma \in (0,1]$, giving $h(x_{k+1}) \ge (1-\gamma) h(x_k)$.
-Interpret $\gamma$ as the permitted per-step fractional loss of barrier value; give the resulting
-exponential lower envelope $h(x_k) \ge (1-\gamma)^k h(x_0)$ (this envelope is plotted in the ACC
-reproduction notebook, \S3).}
+Take $\alpha(r) = \gamma r$ with $\gamma \in (0,1]$. The DCBF condition becomes
+\[
+h(x_{k+1}) - h(x_k) \ge -\gamma h(x_k)
+\quad\Longleftrightarrow\quad
+h(x_{k+1}) \ge (1-\gamma)\, h(x_k),
+\]
+and iterating gives the exponential lower envelope
+\[
+h(x_k) \ge (1-\gamma)^k h(x_0).
+\]
+Operationally $\gamma$ is the permitted per-step fractional loss of barrier value: $\gamma \to 0$
+is maximally conservative, $\gamma = 1$ permits reaching the boundary in a single step. The
+envelope is plotted against the closed-loop $h(x_k)$ trace in the ACC reproduction notebook
+(\texttt{reproduction/zeng\_acc2021/reproduce\_acc2021.ipynb}, \S3).
 
 \begin{proposition}[Necessity of $\gamma \le 1$]
-\TODO{Exhibit a state with $h(x_k) > 0$ from which $\gamma > 1$ admits $h(x_{k+1}) < 0$.}
+If $\gamma > 1$ then $1 - \gamma < 0$, and the condition $h(x_{k+1}) \ge (1-\gamma)\, h(x_k)$
+admits $h(x_{k+1}) < 0$ from any $h(x_k) > 0$. Concretely, with $h(x_k) = 1$ the bound reads
+$h(x_{k+1}) \ge 1 - \gamma$, which is satisfied by $h(x_{k+1}) = 1 - \gamma < 0$: a trajectory
+that merely meets the bound can leave $\mathcal{C}$ in one step. Hence $\gamma > 1$ fails to
+guarantee forward invariance.
 \end{proposition}
 
 \section{The barrier used in this repository}
-\TODO{$h_j(x) = \|p(x) - p_j\|^2 - (r_j + r_{\mathrm{ego}} + \delta)^2$. Justify the squared form
-(smooth at $p = p_j$, quadratic in $x$, so the constraint Jacobian is affine and the SQP Hessian is exact
-for the barrier row). Give $\nabla h_j$ explicitly --- \texttt{TubeMpcCbfSolver::tighteningFor} uses it.}
+For obstacle $j$ with centre $p_j$ and (already inflated) effective radius
+$r_j^{\mathrm{eff}} = r_j + r_{\mathrm{ego}} + \delta$,
+\[
+h_j(x) = \|p(x) - p_j\|^2 - (r_j^{\mathrm{eff}})^2,
+\]
+where $p(x) = P x$ is the position selector. The squared form is deliberate: it is smooth at
+$p(x) = p_j$ (unlike $\|p - p_j\| - r$), quadratic in $x$, and its gradient
+\[
+\nabla h_j(x) = 2 P^\top (P x - p_j)
+\]
+is affine in $x$, so the constraint Jacobian is affine and the Gauss-Newton Hessian is exact for
+the barrier row. \texttt{TubeMpcCbfSolver::tighteningFor} uses exactly this gradient.
 
 \section{Relaxed decay rate}
-\TODO{$h(x_{k+1}) - h(x_k) \ge -\omega_k \gamma h(x_k)$ with $\omega_k \ge 0$ a decision variable.}
-\begin{proposition}[Safety under relaxation]
-\TODO{If $h(x_k) \ge 0$ and $\omega_k \gamma \le 1$ then $h(x_{k+1}) \ge 0$. Prove it, then note that the
-implementation enforces the hypothesis as a hard configuration check.}
+With $\omega_k \ge 0$ a decision variable, the constraint becomes
+\[
+h(x_{k+1}) - h(x_k) \ge -\omega_k \gamma\, h(x_k).
+\]
+\begin{proposition}[Safety under relaxation]\label{prop:relaxed}
+If $h(x_k) \ge 0$ and $\omega_k \gamma \le 1$, then $h(x_{k+1}) \ge 0$.
 \end{proposition}
+\begin{proof}
+\[
+h(x_{k+1}) \ge h(x_k) - \omega_k \gamma\, h(x_k) = (1 - \omega_k \gamma)\, h(x_k) \ge 0,
+\]
+using $\omega_k \gamma \le 1$ and $h(x_k) \ge 0$ in the final inequality.
+\end{proof}
+The implementation enforces the hypothesis as a hard configuration check
+(\texttt{omega\_max} $\times$ \texttt{gamma} $\le 1$ in \texttt{MpcCbfSolver::initialize()}),
+not a soft warning: a relaxation violating it would void the very safety it is meant to retain.
 
 \section{Relation to the continuous-time definition}
-\TODO{Show that the DCBF condition is the forward-Euler discretisation of
-$\dot h \ge -\alpha(h)$ and quantify the discretisation gap: for step $\Delta t$ and $h$ with Lipschitz
-gradient $L_{\nabla h}$, bound the error and state what $\Delta t$ must satisfy for the discrete condition
-to imply the continuous one. This bound is why \texttt{dt} is a solver parameter and not a free knob.}
+The continuous-time CBF condition is $\dot h \ge -\alpha(h)$. Its forward-Euler discretisation
+with step $\Delta t$ is
+\[
+\frac{h(x_{k+1}) - h(x_k)}{\Delta t} \ge -\alpha(h(x_k)),
+\]
+which is exactly the DCBF condition with right-hand side $-\Delta t\, \alpha(h(x_k))$. The
+discretisation gap is the Euler remainder: for $h$ with Lipschitz gradient of constant
+$L_{\nabla h}$, the one-step consistency error is bounded by
+\[
+\left| h(x_{k+1}) - h(x_k) - \Delta t\, \dot h(x_k) \right|
+\le \frac{L_{\nabla h}}{2} \|x_{k+1} - x_k\|^2 .
+\]
+For the discrete condition to imply the continuous one up to this error, $\Delta t$ must be small
+enough that the remainder is dominated by $\alpha(h)$ near the boundary --- precisely why
+\texttt{dt} is a solver parameter rather than a free knob: enlarging $\Delta t$ silently weakens
+the guarantee the barrier is meant to provide.
 
-\section*{References}
-\TODO{Agrawal \& Sreenath 2017; Ames et al. 2017/2019; Zeng et al. ACC/CDC 2021.}
+\begin{thebibliography}{9}
+
+\bibitem{agrawal2017}
+A.~Agrawal and K.~Sreenath, ``Discrete Control Barrier Functions for Safety-Critical Control of
+Discrete Systems with Application to Bipedal Robot Navigation,'' in \emph{Proc. Robotics: Science
+and Systems (RSS)}, 2017.
+
+\bibitem{ames2017}
+A.~D. Ames, X.~Xu, J.~W. Grizzle, and P.~Tabuada, ``Control Barrier Function Based Quadratic
+Programs for Safety Critical Systems,'' \emph{IEEE Trans. Automatic Control}, vol.~62, no.~8, 2017.
+
+\bibitem{ames2019}
+A.~D. Ames, S.~Coogan, M.~Egerstedt, G.~Notomista, K.~Sreenath, and P.~Tabuada, ``Control Barrier
+Functions: Theory and Applications,'' in \emph{Proc. European Control Conf. (ECC)}, 2019.
+
+\bibitem{zeng2021acc}
+J.~Zeng, B.~Zhang, and K.~Sreenath, ``Safety-Critical Model Predictive Control with Discrete-Time
+Control Barrier Function,'' in \emph{Proc. American Control Conf. (ACC)}, 2021.
+
+\bibitem{zeng2021cdc}
+J.~Zeng, Z.~Li, and K.~Sreenath, ``Enhancing Feasibility and Safety of Nonlinear Model Predictive
+Control with Discrete-Time Control Barrier Functions,'' in \emph{Proc. IEEE Conf. Decision and
+Control (CDC)}, 2021.
+
+\end{thebibliography}
 
 \end{document}

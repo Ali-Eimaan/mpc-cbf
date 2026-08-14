@@ -132,6 +132,14 @@ struct SolverDiagnostics
   int first_active_obstacle{-1};
   /// Human-readable cause, filled only when status != kSuccess. See §6.7.
   std::string infeasibility_reason;
+
+  /// Tube solver only: times u_applied hit the input bounds. A saturating
+  /// ancillary law voids the tube guarantee (08_TUBE.md §8.5); this counter
+  /// is how the robustness tests notice it. Always 0 for MpcCbfSolver.
+  int clip_count{0};
+  /// Tube solver only: times the z_0 policy reset the tube (08_TUBE.md §8.5).
+  /// A controller that resets every step is not running a tube.
+  int tube_resets{0};
 };
 
 /// Result of one solve. `u0` is the only value the controller should apply.

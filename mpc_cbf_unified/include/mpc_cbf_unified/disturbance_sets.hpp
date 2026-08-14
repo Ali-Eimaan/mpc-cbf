@@ -161,6 +161,9 @@ struct RpiResult
   int iterations{0};        ///< s in Rakovic's algorithm.
   double alpha{0.0};        ///< The alpha satisfying A^s W subseteq alpha W.
   bool converged{false};    ///< False if max_iterations was hit first.
+  bool exact{true};         ///< True if F_s was never order-reduced, i.e. the
+                            ///< geometric-series identity certifying RPI of
+                            ///< Omega applies exactly (see computeRpiSet).
 };
 
 /// Rakovic et al. outer approximation of the minimal RPI set for

@@ -1,9 +1,8 @@
 // Copyright (c) 2026, Ali-Eimaan. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// SKELETON — declarations only. See .deepseek/09_NODE.md.
-//
 // ROS 2 (Lyrical Luth) wrapper around MpcCbfSolver / TubeMpcCbfSolver.
+// See .deepseek/09_NODE.md.
 
 #ifndef MPC_CBF_UNIFIED__MPC_CBF_NODE_HPP_
 #define MPC_CBF_UNIFIED__MPC_CBF_NODE_HPP_
@@ -18,6 +17,8 @@
 #include <std_msgs/msg/float64_multi_array.hpp>
 #include <visualization_msgs/msg/marker_array.hpp>
 
+#include <cstddef>
+#include <functional>
 #include <memory>
 #include <mutex>
 #include <string>
@@ -28,6 +29,15 @@
 
 namespace mpc_cbf_unified
 {
+
+/// What to do when the solver returns a non-usable solution (§9.4).
+enum class InfeasiblePolicy
+{
+  kHoldLast,        ///< Republish the previous input.
+  kZero,            ///< Publish zeros.
+  kBrake,           ///< Maximum-deceleration input admissible under u_min/u_max.
+  kPreviousHorizon  ///< Walk u_pred from the last usable solve, then brake.
+};
 
 /// Fixed-rate MPC-CBF controller node.
 ///
@@ -74,7 +84,13 @@ private:
   /// Handle a non-usable solve: apply the fallback policy selected by
   /// `infeasible_policy` (hold_last | zero | brake | previous_horizon) and
   /// raise the diagnostic level. See §9.4.
-  void handleSolverFailure(const MpcCbfSolution & solution);
+  void handleSolverFailure(SolverStatus status, const SolverDiagnostics & diagnostics);
+
+  /// Validate live parameter changes before accepting them (§9.2): only gamma,
+  /// Q, R, Qf, safety_margin, ego_radius and infeasible_policy may change at
+  /// runtime; everything else is rejected with a reason.
+  rcl_interfaces::msg::SetParametersResult onSetParameters(
+    const std::vector<rclcpp::Parameter> & params);
 
   // -- conversions ---------------------------------------------------------
   /// nav_msgs/Odometry -> state vector for the configured ModelType.
@@ -89,7 +105,7 @@ private:
   // -- publishing ----------------------------------------------------------
   void publishPredictedPath(const Eigen::MatrixXd & x_pred);
   void publishCbfValues(const SolverDiagnostics & diagnostics);
-  void publishDiagnostics(const MpcCbfSolution & solution);
+  void publishDiagnostics(SolverStatus status, const SolverDiagnostics & diagnostics);
 
   // -- members -------------------------------------------------------------
   MpcConfig mpc_config_;
@@ -111,6 +127,10 @@ private:
 
   rclcpp::TimerBase::SharedPtr control_timer_;
 
+  /// Keeps the live-parameter callback alive; without the handle it is
+  /// deregistered immediately (warn_unused_result).
+  rclcpp::node_interfaces::OnSetParametersCallbackHandle::SharedPtr param_callback_handle_;
+
   /// Guards the three fields below, which are written from subscription
   /// callbacks and read from the control timer.
   std::mutex state_mutex_;
@@ -122,6 +142,29 @@ private:
   Eigen::VectorXd last_input_;
   std::size_t consecutive_failures_{0};
   std::string frame_id_{"map"};
+
+  // -- runtime tuning (live-changeable parameters, §9.2) --------------------
+  InfeasiblePolicy infeasible_policy_{InfeasiblePolicy::kPreviousHorizon};
+  int max_consecutive_failures_{5};
+  double odom_timeout_s_{0.5};
+  double control_rate_hz_{10.0};
+
+  // -- topic names (read from parameters; remap-friendly) -------------------
+  std::string odom_topic_{"~/odom"};
+  std::string goal_topic_{"~/goal"};
+  std::string obstacle_topic_{"~/obstacles"};
+  std::string cmd_topic_{"~/cmd_vel"};
+  std::string predicted_path_topic_{"~/predicted_path"};
+  std::string cbf_values_topic_{"~/cbf_values"};
+
+  /// The control timer lives in its own callback group so a slow solve cannot
+  /// re-enter itself (§9.3).
+  rclcpp::CallbackGroup::SharedPtr control_group_;
+
+  /// Input columns from the last usable solve; the `previous_horizon` fallback
+  /// walks through them one per failure, then brakes (§9.4).
+  Eigen::MatrixXd last_u_pred_;
+  std::size_t fallback_index_{0};
 };
 
 }  // namespace mpc_cbf_unified

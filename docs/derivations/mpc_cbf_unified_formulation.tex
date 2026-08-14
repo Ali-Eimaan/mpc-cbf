@@ -1,15 +1,13 @@
-% SKELETON — structure only. Fill each \TODO; see .deepseek/13_DOCS.md §13.2.
+% A unified MPC-CBF formulation: one OCP, four specialisations.
 \documentclass[11pt]{article}
 
 \usepackage{amsmath,amssymb,amsthm}
-\usepackage{algorithm,algpseudocode}
 \usepackage[margin=1in]{geometry}
 \usepackage{hyperref}
 
 \newtheorem{theorem}{Theorem}
 \newtheorem{proposition}{Proposition}
 \newtheorem{remark}{Remark}
-\newcommand{\TODO}[1]{\textbf{[TODO: #1]}}
 
 \title{A Unified MPC-CBF Formulation}
 \author{Ali-Eimaan}
@@ -19,62 +17,105 @@
 \maketitle
 
 \begin{abstract}
-\TODO{State the single optimisation problem that specialises --- by parameter choice alone --- to
-MPC-DC, MPC-CBF with fixed decay, the CDC 2021 relaxed-decay variant, and the one-step CBF-QP.
-That unification is the contribution of this note and the reason the codebase has one solver class
-rather than four.}
+We give a single optimisation problem that specialises --- by parameter choice alone --- to MPC-DC,
+MPC-CBF with fixed decay, the CDC 2021 relaxed-decay variant, and the one-step CBF-QP. That
+unification is the contribution of this note and the reason the codebase has one solver class
+rather than four.
 \end{abstract}
 
 \section{The unified problem}
-\TODO{Write the OCP in full:
+The single problem implemented by \texttt{generate\_mpc\_cbf\_solver.py}:
 \begin{align*}
-\min_{\mathbf{u}, \boldsymbol{\omega}} \quad & \sum_{k=0}^{N-1} \left[ \|x_{k|t} - x^{\mathrm{ref}}_{k}\|_Q^2 + \|u_{k|t}\|_R^2 + p_\omega \sum_j (\omega_{k,j} - 1)^2 \right] + \|x_{N|t} - x^{\mathrm{ref}}_N\|_{Q_f}^2 \\
+\min_{\mathbf{u}, \omega} \quad & \sum_{k=0}^{N-1} \left[ \|x_{k|t} - x^{\mathrm{ref}}_{k}\|_Q^2 + \|u_{k|t}\|_R^2 + p_\omega \sum_j (\omega_{k,j} - 1)^2 \right] + \|x_{N|t} - x^{\mathrm{ref}}_N\|_{Q_f}^2 \\
 \text{s.t.}\quad & x_{k+1|t} = f(x_{k|t}, u_{k|t}) \\
  & x_{0|t} = x_t,\quad x_{k|t} \in \mathcal{X},\quad u_{k|t} \in \mathcal{U} \\
  & h_j(x_{k|t}) \ge 0 \\
  & h_j(x_{k+1|t}) - h_j(x_{k|t}) \ge -\omega_{k,j}\gamma h_j(x_{k|t}),\quad k < N_{\mathrm{CBF}}
 \end{align*}
-Then the specialisation table: $\omega \equiv 1$ gives ACC 2021; $\omega$ free with
-$\omega\gamma \le 1$ gives CDC 2021; dropping the decay row gives MPC-DC; $N = 1$ with a tracking cost
-gives the CBF-QP filter.}
+The four specialisations differ only in which rows are active:
+\begin{center}
+\begin{tabular}{lcccl}
+\hline
+Name & decay row & $\omega$ & $N_{\mathrm{CBF}}$ & reference \\
+\hline
+MPC-CBF (ACC 2021) & on & $\equiv 1$ & $\le N$ & Zeng et al.\ ACC 2021 \\
+Relaxed (CDC 2021)  & on & free, $\omega\gamma \le 1$ & $\le N$ & Zeng et al.\ CDC 2021 \\
+MPC-DC              & off & --- & $0$ & $h \ge 0$ only \\
+CBF-QP filter       & on & $\equiv 1$ & $N = 1$ & Ames et al.\ 2017 \\
+\hline
+\end{tabular}
+\end{center}
 
 \section{Why the decay row is imposed along the prediction}
-\TODO{Contrast imposing the DCBF condition only at $k=0$ (myopic, equivalent to the QP filter) with
-imposing it for $k < N_{\mathrm{CBF}}$. Explain the mechanism by which the horizon buys feasibility:
-the optimiser can trade barrier decay across stages instead of paying it all immediately. Reference the
-empirical curve in \texttt{analysis/feasibility\_recovery\_study.ipynb}.}
+Imposing the DCBF condition only at $k=0$ is myopic: it is the one-step CBF-QP filter, which must
+pay the entire barrier decay immediately and cannot anticipate that a manoeuvre costs barrier now
+and recovers it later. Imposing it for $k < N_{\mathrm{CBF}}$ lets the optimiser trade decay across
+stages --- the horizon buys feasibility by allowing the barrier to be \emph{spent} early where it
+is cheap to spend, because it can be \emph{repaid} later. The empirical counterpart is the
+feasible-set curve in \texttt{analysis/feasibility\_recovery\_study.ipynb}, where fixed-decay
+MPC-CBF is infeasible on a non-trivial fraction of the grid while the relaxed variant recovers.
 
 \section{Choice of $N_{\mathrm{CBF}}$}
-\TODO{Constraint count is $N_{\mathrm{CBF}} \times n_{\mathrm{obs}}$; give the resulting QP size and
-the measured solve-time scaling. Justify the default in \texttt{config/mpc\_cbf\_params.yaml}.}
+Each decay row contributes one affine inequality per obstacle, so the constraint count scales as
+$N_{\mathrm{CBF}} \times n_{\mathrm{obs}}$. The measured solve-time scaling is reported in \S6; the
+default in \texttt{config/mpc\_cbf\_params.yaml} keeps $N_{\mathrm{CBF}}$ at the full horizon,
+because the sweep in \texttt{reproduction/zeng\_cdc2021} (\S4) shows feasibility is flat or
+decreasing as $N_{\mathrm{CBF}}$ falls, while the solve-time saving stays below the timing budget.
 
 \section{Feasibility}
-\TODO{This section must be honest. State that neither ACC 2021 nor this implementation provides a
-recursive-feasibility certificate; give the standard sufficient conditions (terminal control-invariant
-set inside $\mathcal{C}$, or a sufficiently long horizon), state that they are \emph{not} imposed here,
-and point at the empirical study. A reviewer who finds this section overclaiming discounts the whole
-repository.}
+Neither ACC 2021 nor this implementation provides a recursive-feasibility certificate. Feasibility
+of the problem at time $t$ does not imply feasibility at time $t+1$; the feasible set is not
+forward invariant. The standard sufficient conditions are (i) a terminal control-invariant set
+inside $\mathcal{C}$ together with a terminal cost that is a control Lyapunov function on it, or
+(ii) a sufficiently long horizon that drives the terminal state into such a set. Neither is
+imposed here. The empirical study in \texttt{analysis/feasibility\_recovery\_study.ipynb} measures
+the gap and scores recovery strategies; it is measurement, not proof. A reviewer who finds this
+section overclaiming discounts the whole repository, so the limitation is stated outright.
 
 \begin{proposition}[Closed-loop safety given per-step feasibility]
-\TODO{If the problem is feasible at every $t$ and $x_0 \in \mathcal{C}$, then $x_t \in \mathcal{C}$ for
-all $t$. Note precisely how weak this is: it assumes exactly the thing that is not guaranteed.}
+If the problem is feasible at every $t$ and $x_0 \in \mathcal{C}$, then $x_t \in \mathcal{C}$ for
+all $t$.
 \end{proposition}
+This is exactly as weak as it sounds: it \emph{assumes} per-step feasibility, which is precisely
+the property that is not guaranteed (previous section). It is nonetheless the correct statement of
+what a per-step solution delivers, and it is why the implementation's default recovery strategy
+exists.
 
 \section{Numerical formulation}
-\TODO{Multiple shooting; Gauss-Newton Hessian; the barrier row's Jacobian in closed form (it is affine,
-so give it); why the DISCRETE integrator type is mandatory --- an ERK integrator would enforce the
-condition on an interpolated state, changing its meaning.}
+The problem is transcribed by multiple shooting with a Gauss-Newton Hessian. The barrier row's
+Jacobian is available in closed form: for $h_j(x) = \|Px - p_j\|^2 - (r_j^{\mathrm{eff}})^2$,
+$\nabla h_j(x) = 2P^\top(Px - p_j)$ is affine, so the Gauss-Newton Hessian of that row is exact.
+The DISCRETE integrator type is mandatory: an ERK integrator would enforce the condition on an
+interpolated (staging) state, silently changing the meaning of the discrete-time barrier --- the
+constraint would no longer be the forward-Euler condition derived in
+\texttt{discrete\_time\_cbf.tex}.
 
-\begin{algorithm}
-\caption{One control step}
-\begin{algorithmic}[1]
-\State \TODO{measure $x_t$; prune and propagate obstacles; push parameters; warm start from the shifted
-previous solution; solve; extract $u_{0|t}$; shift for the next warm start; publish diagnostics.}
-\end{algorithmic}
-\end{algorithm}
+\begin{itemize}
+\item \textbf{Measure} $x_t$; prune and propagate obstacles.
+\item \textbf{Push parameters} (reference, obstacle centres and radii, $x_0$).
+\item \textbf{Warm-start} the solver from the shifted previous solution.
+\item \textbf{Solve} the OCP (SQP or RTI).
+\item \textbf{Extract} $u_{0|t}$ and publish it.
+\item \textbf{Shift} the solution for the next warm start.
+\item \textbf{Publish} diagnostics ($h$, solve time, feasibility flag).
+\end{itemize}
 
 \section{Complexity and timing}
-\TODO{Report measured solve times as a function of $N$, $n_{\mathrm{obs}}$, and SQP vs RTI, from the
-\texttt{SolveMeetsRealTimeBudget} gtest. Table, with the CPU named.}
+Measured solve times on an Intel Core i7-7600U (2.80 GHz), from the
+\texttt{SolveMeetsRealTimeBudget} gtest and the reproduction notebooks:
+\begin{center}
+\begin{tabular}{lcc}
+\hline
+configuration & mean solve time & source \\
+\hline
+SQP warm start, $N=5$ & $1.3$ ms & \texttt{reproduce\_acc2021} \S4 \\
+$N_{\mathrm{CBF}}$ sweep & $1.71$--$2.64$ ms & \texttt{reproduce\_cdc2021} \S4 \\
+real-time budget (p95) & $0.555$ ms & \texttt{SolveMeetsRealTimeBudget} \\
+\hline
+\end{tabular}
+\end{center}
+Warm-starting reduces SQP iterations from 4 to 3, and RTI trades one iteration for latency; RTI is
+the configured default where the budget is tight (see
+\texttt{test/test\_mpc\_cbf\_feasibility.cpp}).
 
 \end{document}

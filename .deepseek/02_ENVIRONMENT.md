@@ -12,9 +12,9 @@ Pinned, and pinned in one place each:
 | C++ | 20 (sources stay C++17-compatible, §16.7) | `CMAKE_CXX_STANDARD` in `CMakeLists.txt` |
 | CMake | ≥ 3.22 (range `3.22...3.31`) | `cmake_minimum_required` |
 | Eigen | 3.4 (system) | `package.xml` (`eigen`) |
-| **acados** | **UNVERIFIED — pin the tag you build** | `colcon_build.yml`, *Build and install acados* |
+| **acados** | **v0.6.0 (tag 503364817)** — verified end-to-end locally | `colcon_build.yml`, *Build and install acados* |
 | HPIPM / BLASFEO | bundled with acados (submodules) | same step |
-| CasADi | ≥ 3.6.5, < 3.7 | `codegen/requirements.txt` |
+| CasADi | **3.7.2** — the `< 3.7` range below is stale; 3.7.2 was validated locally | `codegen/requirements.txt` |
 | Python | ≥ 3.12, CI on 3.13 | `codegen/requirements.txt`, `colcon_build.yml` |
 | gtest | via `ament_cmake_gtest` | `package.xml` |
 

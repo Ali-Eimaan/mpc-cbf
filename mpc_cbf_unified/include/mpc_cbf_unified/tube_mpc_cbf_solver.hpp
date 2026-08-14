@@ -49,6 +49,11 @@ struct TubeConfig
   TightenMode tighten_mode{TightenMode::kSupportFunction};
   double lipschitz_h{1.0};        ///< L_h, used when tighten_mode == kLipschitz.
 
+  /// kNone (nominal, un-tightened CBF) exists only for the A8 ablation. Refuse
+  /// to initialise with it unless this flag is set, so the unsafe mode cannot
+  /// be reached from a launch file by accident (08_TUBE.md §8.4).
+  bool allow_unsafe_ablation{false};
+
   /// Recompute Omega whenever the linearisation point moves further than this
   /// (0 disables re-computation; Omega is then computed once in initialize()).
   double relinearisation_threshold{0.0};
@@ -102,7 +107,9 @@ public:
 
   /// Solve for the current *true* state. The nominal state z_0 is chosen per
   /// §8.5 (initial-state strategy), not simply set to x0.
-  TubeMpcCbfSolution solve(const Eigen::VectorXd & x0, const std::vector<ObstacleState> & obstacles);
+  TubeMpcCbfSolution solve(
+    const Eigen::VectorXd & x0,
+    const std::vector<ObstacleState> & obstacles);
 
   void setReference(const Eigen::VectorXd & x_ref);
   void setReferenceTrajectory(const Eigen::MatrixXd & x_ref_traj);
@@ -129,6 +136,13 @@ public:
 private:
   struct Impl;
   std::unique_ptr<Impl> impl_;
+
+  /// Support function of the certified RPI set: the exact zonotope when F_s was
+  /// never order-reduced (verifyInvariance then certifies the zonotope via the
+  /// closed-form certificate), otherwise the polytope (LP fallback). The margin
+  /// and the tightened sets must be consistent with the certificate, and this
+  /// keeps the per-solve hot path LP-free (§8.4).
+  double omegaSupport(const Eigen::VectorXd & direction) const;
 };
 
 const char * toString(TightenMode mode);

@@ -1,6 +1,6 @@
-# SKELETON — tube-MPC-CBF parameters. Loaded *in addition to*
-# mpc_cbf_params.yaml (that file supplies the nominal MPC/CBF settings).
-# Consumed by MpcCbfNode::loadParameters() -> TubeConfig.
+# Tube-MPC-CBF parameters. Loaded *in addition to* mpc_cbf_params.yaml (that
+# file supplies the nominal MPC/CBF settings). Consumed by
+# MpcCbfNode::loadParameters() -> TubeConfig.
 
 /**:
   ros__parameters:
@@ -11,16 +11,21 @@
       # --- disturbance set W ------------------------------------------------
       # Zonotope: W = { center + G z : ||z||_inf <= 1 }.
       # `generators` is row-major with `dimension` rows; the default below is a
-      # box on the velocity states only (wind acting as an acceleration
-      # disturbance over one step: 0.1 m/s per 0.1 s step => 1 m/s^2).
+      # full-dimension box — position errors of +/-0.005 m and velocity
+      # errors of +/-0.02 m/s per step (a wind gust of ~0.2 m/s^2). This
+      # exactly matches the test fixture in
+      # test/test_tube_mpc_robustness.cpp (§10.2). W must be small enough that
+      # both U (-) K Omega and X (-) Omega are non-empty: a velocity
+      # half-width of 0.1 makes the tightened input set empty and
+      # initialize() fails.
       disturbance_set:
         dimension: 4
         center: [0.0, 0.0, 0.0, 0.0]
         generators:
           - [0.005, 0.000, 0.000, 0.000]
           - [0.000, 0.005, 0.000, 0.000]
-          - [0.000, 0.000, 0.100, 0.000]
-          - [0.000, 0.000, 0.000, 0.100]
+          - [0.000, 0.000, 0.020, 0.000]
+          - [0.000, 0.000, 0.000, 0.020]
 
       # --- ancillary feedback ----------------------------------------------
       compute_gain_from_lqr: true

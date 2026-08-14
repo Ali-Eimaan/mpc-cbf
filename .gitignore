@@ -6,6 +6,7 @@ log/
 
 # --- acados generated code ---
 c_generated_code/
+codegen_ocp_*/
 acados_ocp_*.json
 *_acados_ocp.json
 lib*acados*.so
@@ -31,6 +32,7 @@ analysis/**/*.csv
 analysis/**/*.npz
 reproduction/**/*.csv
 reproduction/**/*.npz
+**/figures/
 results/
 
 # --- LaTeX build artifacts ---

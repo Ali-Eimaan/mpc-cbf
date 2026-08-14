@@ -1,7 +1,9 @@
 name: colcon build & test
 
-# SKELETON: job structure is final; steps marked TODO must be filled in once the
-# corresponding source files are implemented. See .deepseek/14_CI.md.
+# The runner is `ubuntu-latest`, not `ubuntu-26.04`, deliberately (risk V1 in
+# .deepseek/02_ENVIRONMENT.md): the `ros:lyrical-ros-base` container supplies
+# Ubuntu 26.04 + ROS 2 Lyrical regardless of the host image, and an
+# `ubuntu-26.04` runner label may not exist. Do not pin the runner.
 
 on:
   push:
@@ -12,6 +14,10 @@ on:
 
 env:
   ROS_DISTRO: lyrical
+  # acados is pinned here, and only here (.deepseek/02_ENVIRONMENT.md §2.2).
+  # v0.6.0 is the tag verified end-to-end locally: codegen -> solver build ->
+  # solve -> C++ symbol binding (MPC_CBF_BIND_SOLVER). `main` is not a pin.
+  ACADOS_TAG: v0.6.0
 
 defaults:
   run:
@@ -19,13 +25,41 @@ defaults:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # 1. C++ / ROS 2 package: build + gtest + linters
+  # 0. Resolve the container digest for the acados cache key (§14.2: key the
+  #    acados cache on the tag *and* the container digest, never the OS alone).
+  # ---------------------------------------------------------------------------
+  get-container-digest:
+    name: resolve base image digest
+    runs-on: ubuntu-latest
+    outputs:
+      digest: ${{ steps.digest.outputs.digest }}
+    steps:
+      - name: Resolve ros:lyrical-ros-base digest
+        id: digest
+        run: |
+          docker pull ros:lyrical-ros-base
+          # RepoDigests[0] is "ros@sha256:..."; @ is invalid in a cache key.
+          digest=$(docker image inspect ros:lyrical-ros-base \
+            --format '{{index .RepoDigests 0}}' | sed 's/.*sha256:/sha256-/')
+          echo "digest=${digest}" >> "$GITHUB_OUTPUT"
+
+  # ---------------------------------------------------------------------------
+  # 1. C++ / ROS 2 package: acados, codegen, colcon build, gtest suite, the
+  #    A7 parity test, and lint (A1, A2-A5, A7, A8). §14.1
   # ---------------------------------------------------------------------------
   colcon:
-    name: colcon build (ROS 2 Lyrical Luth)
-    runs-on: ubuntu-latest      # not ubuntu-26.04 -- see .deepseek/02_ENVIRONMENT.md risk V1
+    name: colcon build (ROS 2 Lyrical)
+    runs-on: ubuntu-latest
+    needs: get-container-digest
     container:
       image: ros:lyrical-ros-base
+    env:
+      ACADOS_SOURCE_DIR: ${{ github.workspace }}/acados
+      # ament_add_pytest_test runs pytest with the venv python, which sees the
+      # ROS 2 site-packages (--system-site-packages) whose launch_testing
+      # pytest plugins are incompatible with modern pytest. Disable them so
+      # `colcon test` can collect; harmless if they are absent.
+      PYTEST_ADDOPTS: "-p no:launch_testing -p no:launch_ros"
     steps:
       - uses: actions/checkout@v4
         with:
@@ -35,70 +69,225 @@ jobs:
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            build-essential cmake git python3-pip python3-colcon-common-extensions \
+            build-essential cmake git python3-pip python3-venv \
+            python3-colcon-common-extensions \
             libeigen3-dev
-          # TODO(deepseek §14): add any extra deps introduced by the implementation.
 
+      - name: Restore acados from cache
+        id: cache-acados
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ACADOS_SOURCE_DIR }}
+          key: acados-${{ env.ACADOS_TAG }}-${{ needs.get-container-digest.outputs.digest }}-${{ hashFiles('.github/workflows/colcon_build.yml') }}
+
+      # §2.2: build acados from the pinned tag. Deliberate deviation from the
+      # recipe's `-DCMAKE_INSTALL_PREFIX=$PWD/../install`: that would put
+      # libacados.so in acados/install/lib, but acados_template resolves
+      # libraries from ${ACADOS_SOURCE_DIR}/lib (link_libs.json, git_commit_hash
+      # and t_renderer are expected under the source tree too). Installing
+      # into the source tree via ACADOS_INSTALL_DIR reproduces the locally
+      # verified layout with no extra symlinks.
       - name: Build and install acados
+        if: steps.cache-acados.outputs.cache-hit != 'true'
         run: |
-          echo "TODO(deepseek §14): clone acados (pinned tag), cmake -DACADOS_WITH_QPOASES=ON,"
-          echo "                make install, export ACADOS_SOURCE_DIR / LD_LIBRARY_PATH."
-          echo "                Cache the install dir with actions/cache to keep CI under 10 min."
+          git clone --recursive --branch "${ACADOS_TAG}" --depth 1 \
+            https://github.com/acados/acados.git "${ACADOS_SOURCE_DIR}"
+          mkdir -p "${ACADOS_SOURCE_DIR}/build"
+          cd "${ACADOS_SOURCE_DIR}/build"
+          cmake -DACADOS_INSTALL_DIR="${ACADOS_SOURCE_DIR}" \
+                -DACADOS_WITH_QPOASES=ON -DACADOS_WITH_HPIPM=ON \
+                -DACADOS_WITH_OSQP=ON \
+                -DACADOS_EXAMPLES=OFF ..
+          make -j"$(nproc)" install
+
+      - name: Create Python venv and install dependencies
+        run: |
+          python3 -m venv --system-site-packages /opt/mpccbf-venv
+          . /opt/mpccbf-venv/bin/activate
+          python -m pip install --upgrade pip
+          pip install -r src/mpc-cbf/codegen/requirements.txt
+          pip install -e "${ACADOS_SOURCE_DIR}/interfaces/acados_template"
+
+      # §14.2: codegen runs before colcon build, always. Cache keyed on the
+      # acados tag + a hash of codegen/. file(GLOB CONFIGURE_DEPENDS) in
+      # CMakeLists.txt §3.3 handles the "restored cache adds files after
+      # configure" caveat by re-globbing at build time.
+      - name: Restore generated solvers from cache
+        id: cache-codegen
+        uses: actions/cache@v4
+        with:
+          path: src/mpc-cbf/c_generated_code
+          key: codegen-${{ env.ACADOS_TAG }}-${{ hashFiles('src/mpc-cbf/codegen/**') }}
 
       - name: Generate acados solvers
+        if: steps.cache-codegen.outputs.cache-hit != 'true'
         run: |
-          echo "TODO(deepseek §14): pip install -r src/mpc-cbf/codegen/requirements.txt"
-          echo "                python3 src/mpc-cbf/codegen/generate_mpc_cbf_solver.py --all"
-          echo "                python3 src/mpc-cbf/codegen/generate_tube_solver.py --all"
+          . /opt/mpccbf-venv/bin/activate
+          export ACADOS_SOURCE_DIR="${ACADOS_SOURCE_DIR}"
+          export TERA_PATH="${ACADOS_SOURCE_DIR}/bin/t_renderer"
+          export LD_LIBRARY_PATH="${ACADOS_SOURCE_DIR}/lib:${LD_LIBRARY_PATH}"
+          cd src/mpc-cbf
+          python codegen/generate_mpc_cbf_solver.py --all
+          python codegen/generate_tube_solver.py --all
 
       - name: colcon build
         run: |
+          . /opt/mpccbf-venv/bin/activate
           source /opt/ros/${ROS_DISTRO}/setup.bash
-          colcon build --symlink-install --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
+          export ACADOS_SOURCE_DIR="${ACADOS_SOURCE_DIR}"
+          export LD_LIBRARY_PATH="${ACADOS_SOURCE_DIR}/lib:${LD_LIBRARY_PATH}"
+          cd src/mpc-cbf
+          colcon build --symlink-install \
+            --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
 
+      # §14.4: both flags are needed - the first fails the job, the second
+      # prints *what* failed. Runs gtest, the ament linters, and the A7 parity
+      # test (ament_add_pytest_test wires MPC_CBF_CPP_SOLVE_CLI; the venv has
+      # acados_template, so A7 is verified here, not in the python job).
       - name: colcon test
         run: |
+          . /opt/mpccbf-venv/bin/activate
           source /opt/ros/${ROS_DISTRO}/setup.bash
-          colcon test --event-handlers console_direct+
+          export ACADOS_SOURCE_DIR="${ACADOS_SOURCE_DIR}"
+          export LD_LIBRARY_PATH="${ACADOS_SOURCE_DIR}/lib:${LD_LIBRARY_PATH}"
+          cd src/mpc-cbf
+          set +e
+          colcon test --event-handlers console_direct+ --return-code-on-test-failure
+          status=$?
           colcon test-result --verbose
+          exit $status
+
+      - name: Upload test results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: colcon-test-results
+          path: src/mpc-cbf/build/**/test_results/**/*.xml
 
   # ---------------------------------------------------------------------------
-  # 2. Python: unit tests + notebook execution (reproduction must stay green)
+  # 2. Python: unit tests + reproduction notebook execution (A6, A9). §14.1
+  #    Runs in the same container so the acados cache is shared (identical
+  #    glibc; a cache saved by the colcon job would not run on the bare
+  #    ubuntu-latest host). setup-python supplies Python 3.13 (spec: CI on 3.13).
   # ---------------------------------------------------------------------------
   python:
     name: python tests & notebook reproduction
     runs-on: ubuntu-latest
+    needs: get-container-digest
+    container:
+      image: ros:lyrical-ros-base
+    env:
+      ACADOS_SOURCE_DIR: ${{ github.workspace }}/acados
+      MPLBACKEND: Agg
     steps:
       - uses: actions/checkout@v4
 
       - uses: actions/setup-python@v5
         with:
-          python-version: '3.12'
+          python-version: '3.13'
+
+      - name: Install system dependencies
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends \
+            build-essential cmake git
+
+      - name: Restore acados from cache
+        id: cache-acados
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.ACADOS_SOURCE_DIR }}
+          key: acados-${{ env.ACADOS_TAG }}-${{ needs.get-container-digest.outputs.digest }}-${{ hashFiles('.github/workflows/colcon_build.yml') }}
+
+      - name: Build and install acados
+        if: steps.cache-acados.outputs.cache-hit != 'true'
+        run: |
+          git clone --recursive --branch "${ACADOS_TAG}" --depth 1 \
+            https://github.com/acados/acados.git "${ACADOS_SOURCE_DIR}"
+          mkdir -p "${ACADOS_SOURCE_DIR}/build"
+          cd "${ACADOS_SOURCE_DIR}/build"
+          cmake -DACADOS_INSTALL_DIR="${ACADOS_SOURCE_DIR}" \
+                -DACADOS_WITH_QPOASES=ON -DACADOS_WITH_HPIPM=ON \
+                -DACADOS_WITH_OSQP=ON \
+                -DACADOS_EXAMPLES=OFF ..
+          make -j"$(nproc)" install
 
       - name: Install Python dependencies
         run: |
           python -m pip install --upgrade pip
           pip install -r codegen/requirements.txt
+          pip install -e "${ACADOS_SOURCE_DIR}/interfaces/acados_template"
 
+      - name: Generate acados solvers
+        run: |
+          export ACADOS_SOURCE_DIR="${ACADOS_SOURCE_DIR}"
+          export TERA_PATH="${ACADOS_SOURCE_DIR}/bin/t_renderer"
+          export LD_LIBRARY_PATH="${ACADOS_SOURCE_DIR}/lib:${LD_LIBRARY_PATH}"
+          python codegen/generate_mpc_cbf_solver.py --all
+          python codegen/generate_tube_solver.py --all
+
+      # A6 (recursive-feasibility sweep) lives here; the parity test (A7) runs
+      # in the colcon job where cpp_solve_cli exists and skips here by design.
       - name: Run Python tests
         run: |
-          echo "TODO(deepseek §14): pytest mpc_cbf_unified/test/test_recursive_feasibility.py -v"
+          export ACADOS_SOURCE_DIR="${ACADOS_SOURCE_DIR}"
+          export LD_LIBRARY_PATH="${ACADOS_SOURCE_DIR}/lib:${LD_LIBRARY_PATH}"
+          pytest mpc_cbf_unified/test/test_recursive_feasibility.py -v
 
+      # A9: the reproduction notebooks must stay green. They assert their own
+      # key numbers, so a numerical regression fails the build - do NOT add
+      # --allow-errors. The three analysis/ notebooks hold no paper numbers
+      # and are slower; they run on schedule or on demand, not per push.
       - name: Execute reproduction notebooks
         run: |
-          echo "TODO(deepseek §14): jupyter nbconvert --to notebook --execute \\"
-          echo "                  reproduction/zeng_acc2021/reproduce_acc2021.ipynb \\"
-          echo "                  reproduction/zeng_cdc2021/reproduce_cdc2021.ipynb"
-          echo "The notebooks must assert their own key numbers so a regression fails CI."
+          export ACADOS_SOURCE_DIR="${ACADOS_SOURCE_DIR}"
+          export TERA_PATH="${ACADOS_SOURCE_DIR}/bin/t_renderer"
+          export LD_LIBRARY_PATH="${ACADOS_SOURCE_DIR}/lib:${LD_LIBRARY_PATH}"
+          jupyter nbconvert --to notebook --execute \
+            reproduction/zeng_acc2021/reproduce_acc2021.ipynb \
+            reproduction/zeng_cdc2021/reproduce_cdc2021.ipynb
 
   # ---------------------------------------------------------------------------
-  # 3. Docs: LaTeX derivations must compile
+  # 3. Docs: the three LaTeX derivations are a deliverable; a broken derivation
+  #    fails the job. §14.6
   # ---------------------------------------------------------------------------
   docs:
     name: build derivations
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Install TeX Live
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            texlive-latex-base texlive-latex-recommended \
+            texlive-latex-extra texlive-fonts-recommended \
+            texlive-bibtex-extra
+
       - name: Compile LaTeX derivations
         run: |
-          echo "TODO(deepseek §14): compile docs/derivations/*.tex with a latex action or texlive container."
+          set -euo pipefail
+          mkdir -p /tmp/texbuild
+          for tex in docs/derivations/*.tex; do
+            name="$(basename "$tex" .tex)"
+            cp "$tex" /tmp/texbuild/
+            pushd /tmp/texbuild > /dev/null
+            pdflatex -halt-on-error -interaction=nonstopmode "$name"
+            if [ -f "$name.bib" ]; then
+              bibtex "$name"
+            fi
+            pdflatex -halt-on-error -interaction=nonstopmode "$name"
+            pdflatex -halt-on-error -interaction=nonstopmode "$name"
+            popd > /dev/null
+            mkdir -p docs/build
+            cp "/tmp/texbuild/$name.pdf" docs/build/
+          done
+
+      - name: Upload derivation PDFs
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: derivation-pdfs
+          path: docs/build/*.pdf
+          if-no-files-found: error

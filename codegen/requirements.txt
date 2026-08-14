@@ -1,15 +1,24 @@
-# Pin exactly; CI reproducibility of the notebooks depends on it.
-# TODO(deepseek): replace the ranges with the versions you actually validated,
-# and record them in reproduction/REPRODUCTION_REPORT.md.
-numpy>=1.26,<2.2
-scipy>=1.11,<1.15
-casadi>=3.6.5,<3.7
-matplotlib>=3.8,<3.10
-pandas>=2.1,<2.3
-jupyter>=1.0
-nbconvert>=7.10
-pytest>=8.0
+# Pinned exactly; CI reproducibility of the notebooks depends on it. These are
+# the versions validated end-to-end locally (codegen -> solver build -> solve ->
+# C++ symbol binding) and recorded in reproduction/REPRODUCTION_REPORT.md.
+# CasADi is deliberately 3.7.2 (not < 3.7): the < 3.7 range in
+# .deepseek/02_ENVIRONMENT.md predates the local validation, which used 3.7.2
+# successfully. The spec rule is "fix the pin and update the table row to say
+# what is actually true" - the 02_ENVIRONMENT.md row is updated to match.
+numpy==2.5.2
+scipy==1.18.0
+casadi==3.7.2
+matplotlib==3.11.1
+pandas==3.0.5
+jupyter==1.1.1
+nbconvert==7.17.1
+nbformat==5.11.0
+pytest==9.1.1
+pillow==12.3.0
+ipykernel==7.3.0
 
 # acados_template ships with the acados source tree and must be installed from
 # it, not from PyPI:
 #   pip install -e ${ACADOS_SOURCE_DIR}/interfaces/acados_template
+# Pinned tag: v0.6.0 (the workflow's ACADOS_TAG env var and
+# .deepseek/02_ENVIRONMENT.md §2.2 must agree with this).
