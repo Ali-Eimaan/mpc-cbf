@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // Test-only executable: one JSON object per line on stdin, one JSON object per
-// line on stdout, one solve per line — the parity harness for A7
-// (.deepseek/11_PYTHON_REFERENCE.md §11.5). It is located by
+// line on stdout, one solve per line — the C++/Python parity harness for
+// A7. It is located by
 // test_recursive_feasibility.py through the MPC_CBF_CPP_SOLVE_CLI environment
 // variable set in CMakeLists.txt, with a cwd-relative fallback.
 //
@@ -22,6 +22,9 @@
 #include <mpc_cbf_unified/mpc_cbf_solver.hpp>
 
 #include <Eigen/Dense>
+
+#include <fcntl.h>
+#include <unistd.h>
 
 #include <cmath>
 #include <cstdio>
@@ -362,6 +365,43 @@ CbfConfig scenarioCbf()
   return cbf;
 }
 
+// acados' C code writes solver diagnostics ("QP solver returned error status
+// ... ACADOS_MINSTEP") to stdout. This CLI's contract is one JSON object per
+// line on stdout, so that chatter would corrupt the stream the parity test
+// parses — and it only appears on the hard states, which is exactly where the
+// comparison matters. Redirect fd 1 to /dev/null for the duration of the solve
+// and restore it before writing the response. stderr is left alone so real
+// errors stay visible.
+class StdoutSilencer
+{
+public:
+  StdoutSilencer()
+  {
+    std::fflush(stdout);
+    saved_fd_ = ::dup(STDOUT_FILENO);
+    const int devnull = ::open("/dev/null", O_WRONLY);
+    if (devnull >= 0) {
+      ::dup2(devnull, STDOUT_FILENO);
+      ::close(devnull);
+    }
+  }
+
+  ~StdoutSilencer()
+  {
+    std::fflush(stdout);
+    if (saved_fd_ >= 0) {
+      ::dup2(saved_fd_, STDOUT_FILENO);
+      ::close(saved_fd_);
+    }
+  }
+
+  StdoutSilencer(const StdoutSilencer &) = delete;
+  StdoutSilencer & operator=(const StdoutSilencer &) = delete;
+
+private:
+  int saved_fd_{-1};
+};
+
 const char * statusName(SolverStatus status)
 {
   switch (status) {
@@ -451,12 +491,32 @@ int main()
         continue;
       }
 
-      const MpcCbfSolution sol = solver.solve(x0, obstacles);
+      // One process serves every request, so without this the solver would
+      // carry the shifted warm start from the previous — unrelated — state.
+      // The Python side solves each grid point as an independent problem from
+      // the u = 0 coasting rollout; a stale warm start is the documented route
+      // to ACADOS_MINSTEP at the first SQP linearization, so the two would not
+      // be solving the same problem. Coast here too: constant-x0 on stages
+      // 1..N, u = 0 everywhere.
+      solver.reset();
+      {
+        const int horizon = solver.mpcConfig().horizon;
+        Eigen::MatrixXd x_guess(solver.stateDim(), horizon + 1);
+        x_guess.colwise() = x0;
+        solver.warmStart(
+          x_guess, Eigen::MatrixXd::Zero(solver.inputDim(), horizon));
+      }
+
+      MpcCbfSolution sol;
+      {
+        StdoutSilencer silence_acados;
+        sol = solver.solve(x0, obstacles);
+      }
       const SolverDiagnostics & diag = sol.diagnostics;
 
-      response = "{\"status\": ";
+      response = "{\"status\": \"";
       response += statusName(sol.status);
-      response += ", \"u0\": [";
+      response += "\", \"u0\": [";
       for (int i = 0; i < sol.u0.size(); ++i) {
         if (i > 0) {
           response += ", ";

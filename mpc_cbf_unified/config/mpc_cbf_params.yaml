@@ -1,4 +1,4 @@
-# SKELETON — parameter names and defaults are the contract between
+# Parameter names and defaults are the contract between
 # config/, launch/, and MpcCbfNode::declareParameters(). Keep them in sync.
 # Values marked (paper) reproduce Zeng-Zhang-Sreenath ACC 2021 Fig. 2-4;
 # do not retune them without updating reproduction/REPRODUCTION_REPORT.md.

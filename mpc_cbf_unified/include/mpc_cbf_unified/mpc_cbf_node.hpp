@@ -2,7 +2,6 @@
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // ROS 2 (Lyrical Luth) wrapper around MpcCbfSolver / TubeMpcCbfSolver.
-// See .deepseek/09_NODE.md.
 
 #ifndef MPC_CBF_UNIFIED__MPC_CBF_NODE_HPP_
 #define MPC_CBF_UNIFIED__MPC_CBF_NODE_HPP_
@@ -30,7 +29,7 @@
 namespace mpc_cbf_unified
 {
 
-/// What to do when the solver returns a non-usable solution (§9.4).
+/// What to do when the solver returns a non-usable solution.
 enum class InfeasiblePolicy
 {
   kHoldLast,        ///< Republish the previous input.
@@ -51,7 +50,7 @@ enum class InfeasiblePolicy
 ///   pub  /diagnostics      diagnostic_msgs/DiagnosticArray  solver health
 ///
 /// Parameters are declared in config/mpc_cbf_params.yaml and
-/// config/tube_mpc_params.yaml; see §9.2 for the full list and validation rules.
+/// config/tube_mpc_params.yaml.
 class MpcCbfNode : public rclcpp::Node
 {
 public:
@@ -83,10 +82,10 @@ private:
 
   /// Handle a non-usable solve: apply the fallback policy selected by
   /// `infeasible_policy` (hold_last | zero | brake | previous_horizon) and
-  /// raise the diagnostic level. See §9.4.
+  /// raise the diagnostic level.
   void handleSolverFailure(SolverStatus status, const SolverDiagnostics & diagnostics);
 
-  /// Validate live parameter changes before accepting them (§9.2): only gamma,
+  /// Validate live parameter changes before accepting them: only gamma,
   /// Q, R, Qf, safety_margin, ego_radius and infeasible_policy may change at
   /// runtime; everything else is rejected with a reason.
   rcl_interfaces::msg::SetParametersResult onSetParameters(
@@ -143,7 +142,7 @@ private:
   std::size_t consecutive_failures_{0};
   std::string frame_id_{"map"};
 
-  // -- runtime tuning (live-changeable parameters, §9.2) --------------------
+  // -- runtime tuning (live-changeable parameters) --------------------------
   InfeasiblePolicy infeasible_policy_{InfeasiblePolicy::kPreviousHorizon};
   int max_consecutive_failures_{5};
   double odom_timeout_s_{0.5};
@@ -158,11 +157,11 @@ private:
   std::string cbf_values_topic_{"~/cbf_values"};
 
   /// The control timer lives in its own callback group so a slow solve cannot
-  /// re-enter itself (§9.3).
+  /// re-enter itself.
   rclcpp::CallbackGroup::SharedPtr control_group_;
 
   /// Input columns from the last usable solve; the `previous_horizon` fallback
-  /// walks through them one per failure, then brakes (§9.4).
+  /// walks through them one per failure, then brakes.
   Eigen::MatrixXd last_u_pred_;
   std::size_t fallback_index_{0};
 };

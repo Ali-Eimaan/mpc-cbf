@@ -9,7 +9,7 @@ Listens on /odom, /obstacles and /episode and records, for every episode, the
 minimum barrier value over time:
     min_k h(x_k),  h(x) = min_o (|p - o|^2 - r_eff^2),
 with r_eff = obstacle_radius + ego_radius + safety_margin (the same effective
-radius the controller enforces, §4.2). A negative minimum means the obstacle
+radius the controller enforces). A negative minimum means the obstacle
 was clipped. The output CSV (one row per episode: episode, min_barrier_value,
 seed) feeds analysis/disturbance_robustness_sweep.ipynb.
 """

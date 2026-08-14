@@ -7,7 +7,7 @@ MPC-CBF with N = 15 does. Runs the planar-quadrotor model so the result is not
 trivially a double-integrator artefact. Runs with no arguments;
 `controller:=cbf_qp` produces the failing baseline.
 
-The planar-quad convention (documented in the node source, §9.5):
+The planar-quad convention (documented in the node source):
 cmd_vel.linear.x is thrust [N] and cmd_vel.angular.y is the pitch torque [N m];
 sim_quadrotor_planar.py integrates the planar quadrotor (m = 1 kg, I = 0.1
 kg m^2). The obstacle marker moves at constant velocity encoded in its

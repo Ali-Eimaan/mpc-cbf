@@ -6,7 +6,7 @@ obstacle at (0.5, 0.5) between start (0, 0) and goal (1, 1) — the exact
 scenario reproduced in reproduction/zeng_acc2021/reproduce_acc2021.ipynb.
 Runs with no arguments; every knob below is an optional override.
 
-The double-integrator convention (documented in the node source, §9.5):
+The double-integrator convention (documented in the node source):
 cmd_vel.linear.x/y carry ACCELERATIONS [m/s^2] and sim_double_integrator.py
 integrates them into velocity. Obstacle markers are SPHEREs; a marker's
 scale.x/2 is its radius and the node adds ego_radius + safety_margin on top.

@@ -1,7 +1,7 @@
 // Copyright (c) 2026, Ali-Eimaan. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// Two layers are tested here (10_TESTS.md §10.2): the convex-set machinery
+// Two layers are tested here: the convex-set machinery
 // (cheap, exact, must be bullet-proof because everything above it inherits its
 // errors) and the tube solver's robustness claim.
 
@@ -54,7 +54,7 @@ double spectralRadius(const Eigen::MatrixXd & M)
 }
 
 /// Double-integrator ZOH dynamics shared by the RPI and closed-loop tests
-/// (04_MODELS.md §4.3, codegen/models.py _exact_zoh): dt = 0.1.
+/// (exact ZOH, codegen/models.py _exact_zoh): dt = 0.1.
 struct DoubleIntegrator
 {
   static constexpr double dt = 0.1;
@@ -713,7 +713,7 @@ TEST_F(TubeMpcTest, AncillaryInputRespectsBounds)
     x = advance(x, sol.u_applied, w);
   }
   // The clip must never trigger: with a correct tightening, v_0 + K e_0 stays
-  // inside U by construction (08_TUBE.md §8.5).
+  // inside U by construction.
   EXPECT_EQ(clip_total, 0);
 }
 

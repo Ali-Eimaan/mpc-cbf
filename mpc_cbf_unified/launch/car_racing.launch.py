@@ -7,7 +7,7 @@ MPC-DC with a short horizon fails and MPC-CBF succeeds — the headline result o
 the ACC paper, and the source of media/cbfqp_vs_mpccbf_side_by_side.gif.
 Runs with no arguments; `controller:=mpc_dc` produces the failing baseline.
 
-The bicycle convention (documented in the node source, §9.5): cmd_vel.linear.x
+The bicycle convention (documented in the node source): cmd_vel.linear.x
 is the acceleration [m/s^2] and cmd_vel.angular.z is the steering angle [rad];
 sim_bicycle.py integrates the kinematic bicycle (wheelbase 0.35 m).
 """

@@ -9,7 +9,7 @@ Integrates the double-integrator plant
     p_dot = v,  v_dot = u,
 with Euler sub-stepping at a finer rate than the control rate. The control
 input arrives on /cmd_vel as a TwistStamped where linear.x/y are the
-accelerations [m/s^2] (the node's double-integrator convention, §9.5).
+accelerations [m/s^2] (the node's double-integrator convention).
 Odometry is published on /odom, the scenario on /obstacles (SPHERE markers),
 the goal on /goal, and the episode index on /episode.
 
@@ -125,7 +125,7 @@ class DoubleIntegratorSim(Node):
         self.state[3] += w[3]
 
         # Integrate the plant with sub-stepping; check h at every sub-step
-        # (inter-sample constraint, §12.3).
+        # (inter-sample constraint).
         min_h = float('inf')
         for _ in range(substeps):
             self.state[2] += self.cmd[0] * ds

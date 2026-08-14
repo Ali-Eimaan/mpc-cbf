@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Ali-Eimaan. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
-"""M1 tests for codegen/models.py — .deepseek/04_MODELS.md §4.6.
+"""Tests for codegen/models.py.
 
 Fixed RNG seed, printed at the top of the module. A randomised test that cannot
 be replayed is a lottery, not a test.
@@ -137,7 +137,7 @@ def test_DcbfConstraintReducesToFixedDecayAtOmegaOne():
 
 
 def test_PositionSelectorIsVerticalForPlanarQuadrotor():
-    """Guards §16.2's favourite bug: the planar quadrotor lives in the vertical
+    """Guards the repository's favourite bug: the planar quadrotor lives in the vertical
     plane, so index 1 is pz and must never be called py."""
     spec = MODEL_REGISTRY["quadrotor_planar"]()
     assert spec.position_indices == (0, 1)

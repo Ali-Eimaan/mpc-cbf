@@ -14,7 +14,7 @@
       # full-dimension box — position errors of +/-0.005 m and velocity
       # errors of +/-0.02 m/s per step (a wind gust of ~0.2 m/s^2). This
       # exactly matches the test fixture in
-      # test/test_tube_mpc_robustness.cpp (§10.2). W must be small enough that
+      # test/test_tube_mpc_robustness.cpp. W must be small enough that
       # both U (-) K Omega and X (-) Omega are non-empty: a velocity
       # half-width of 0.1 makes the tightened input set empty and
       # initialize() fails.

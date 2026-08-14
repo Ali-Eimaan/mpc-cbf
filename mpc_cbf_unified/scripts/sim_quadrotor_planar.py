@@ -10,7 +10,7 @@ Integrates the planar quadrotor (m = 1 kg, I = 0.1 kg m^2, g = 9.81 m/s^2):
     v_x_dot = (T / m) sin(phi),   v_z_dot = (T / m) cos(phi) - g,
     phi_dot = phi_rate,   phi_rate_dot = tau / I.
 cmd_vel.linear.x is the thrust T and cmd_vel.angular.y the pitch torque tau
-(node convention §9.5). The state is [px, pz, vx, vz, phi, phi_rate].
+(node convention). The state is [px, pz, vx, vz, phi, phi_rate].
 
 The obstacle is a SPHERE marker moving at constant `--obstacle-speed` toward
 the vehicle start (frame_locked := false, velocity in the `points` field): the
@@ -85,7 +85,7 @@ class QuadrotorPlanarSim(Node):
         msg.header.frame_id = 'map'
         msg.child_frame_id = 'base_link'
         msg.pose.pose.position.x = px
-        msg.pose.pose.position.z = pz  # planar: pz in position.z (node §9.5)
+        msg.pose.pose.position.z = pz  # planar: pz in position.z
         msg.pose.pose.orientation.x = 0.0
         msg.pose.pose.orientation.y = math.sin(phi / 2.0)
         msg.pose.pose.orientation.z = 0.0

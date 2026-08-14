@@ -1,7 +1,7 @@
 // Copyright (c) 2026, Ali-Eimaan. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// MpcCbfSolver tests (.deepseek/10_TESTS.md §10.1). The fixture reproduces the
+// MpcCbfSolver tests. The fixture reproduces the
 // ACC 2021 2-D example: double integrator, N = 8, dt = 0.1, start (0,0),
 // goal (1,1), one static obstacle of radius 0.2 at (0.5, 0.5), u in [-1,1]^2,
 // gamma = 0.3. The same numbers appear in the reproduction notebook — keep
@@ -40,7 +40,7 @@ using mpc_cbf_unified::MpcConfig;
 using mpc_cbf_unified::ObstacleState;
 using mpc_cbf_unified::SolverStatus;
 
-// Fixed RNG seed, printed so a failing run is replayable (10_TESTS.md).
+// Fixed RNG seed, printed so a failing run is replayable.
 constexpr unsigned int kRngSeed = 0xC0FFEEu;
 
 namespace

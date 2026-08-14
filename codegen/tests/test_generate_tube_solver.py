@@ -1,6 +1,6 @@
 # Copyright (c) 2026, Ali-Eimaan. All rights reserved.
 # SPDX-License-Identifier: BSD-3-Clause
-"""M7 tests for codegen/generate_tube_solver.py — .deepseek/05_CODEGEN.md §5.7.
+"""Tests for codegen/generate_tube_solver.py.
 
 Everything here runs WITHOUT acados: the numpy/scipy cross-check
 (compute_offline_sets) and the casadi-only row assembly are exactly the parts
@@ -146,7 +146,7 @@ def test_TubeRowsMatchNominalWhenTighteningZero():
 
 def test_TubeRowsCarryTighteningInBothRows():
     """The c term enters distance as h - c and the DCBF as gamma*(h - c): bump
-    c by delta and check both rows move the way the derivation (§8.4) says."""
+    c by delta and check both rows move the way the derivation says."""
     spec = MODEL_REGISTRY["double_integrator_2d"]()
     n_obs = 2  # small, so the index arithmetic is easy to eyeball
     z = ca.SX.sym("z", spec.nx)

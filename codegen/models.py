@@ -1,15 +1,15 @@
 """Shared CasADi dynamics models.
 
-Not listed in .deepseek/INFO.md's tree; added because the two generator scripts, the
+Added because the two generator scripts, the
 pytest suite and every notebook must agree bit-for-bit on the dynamics. One
 definition, four consumers.
 
 This module is the single source of truth for:
 
-  * the four plants (.deepseek/04_MODELS.md §4.2),
-  * their discrete-time dynamics (§4.3),
-  * the barrier function h(x) = ||P x - p_obs||^2 - r_eff^2 (§4.4),
-  * the DCBF constraint expression (§4.5).
+  * the four plants,
+  * their discrete-time dynamics,
+  * the barrier function h(x) = ||P x - p_obs||^2 - r_eff^2,
+  * the DCBF constraint expression.
 
 Note: `acados_template.AcadosModel` is deliberately NOT imported at module level
 — this file is imported by tests and notebooks that must run on machines
@@ -117,8 +117,7 @@ def quadrotor_planar(mass: float = 1.0, inertia: float = 0.01, g: float = 9.81) 
     """x = [px, pz, vx, vz, phi, phidot], u = [T, tau] (thrust, torque).
 
     Lives in the VERTICAL plane: index 1 is pz, not py. This is the single most
-    common source of confusion in the repository (see .deepseek/16_CONVENTIONS.md
-    §16.2); the test PositionSelectorIsVerticalForPlanarQuadrotor guards it.
+    common source of confusion in the repository; the test PositionSelectorIsVerticalForPlanarQuadrotor guards it.
     """
     x = ca.SX.sym("x", 6)
     u = ca.SX.sym("u", 2)
@@ -249,7 +248,7 @@ def barrier_expression(spec: ModelSpec, x, obstacle_params):
     THE definition of h in the repo. `obstacle_params` is the symbolic slice of
     the acados parameter vector for one obstacle:
         [px, py, pz, vx, vy, vz, radius]
-    (see .deepseek/05_CODEGEN.md §5.3). The radius passed in must already be the
+    The radius passed in must already be the
     *effective* radius r_eff = r_obs + ego_radius + safety_margin; the caller
     does the inflation, the expression does not — inflating twice is a real bug
     that produces a mysteriously conservative controller.

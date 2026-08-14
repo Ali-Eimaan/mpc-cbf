@@ -1,8 +1,8 @@
 name: colcon build & test
 
-# The runner is `ubuntu-latest`, not `ubuntu-26.04`, deliberately (risk V1 in
-# .deepseek/02_ENVIRONMENT.md): the `ros:lyrical-ros-base` container supplies
-# Ubuntu 26.04 + ROS 2 Lyrical regardless of the host image, and an
+# The runner is `ubuntu-latest`, not `ubuntu-26.04`, deliberately: the `ros:lyrical-ros-base`
+# container supplies Ubuntu 26.04 + ROS 2 Lyrical regardless of the host
+# image, and an
 # `ubuntu-26.04` runner label may not exist. Do not pin the runner.
 
 on:
@@ -14,7 +14,7 @@ on:
 
 env:
   ROS_DISTRO: lyrical
-  # acados is pinned here, and only here (.deepseek/02_ENVIRONMENT.md §2.2).
+  # acados is pinned here, and only here.
   # v0.6.0 is the tag verified end-to-end locally: codegen -> solver build ->
   # solve -> C++ symbol binding (MPC_CBF_BIND_SOLVER). `main` is not a pin.
   ACADOS_TAG: v0.6.0
@@ -25,8 +25,8 @@ defaults:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # 0. Resolve the container digest for the acados cache key (§14.2: key the
-  #    acados cache on the tag *and* the container digest, never the OS alone).
+  # 0. Resolve the container digest for the acados cache key: the cache is
+  #    keyed on the tag *and* the digest, never the OS alone.
   # ---------------------------------------------------------------------------
   get-container-digest:
     name: resolve base image digest
@@ -45,7 +45,7 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # 1. C++ / ROS 2 package: acados, codegen, colcon build, gtest suite, the
-  #    A7 parity test, and lint (A1, A2-A5, A7, A8). §14.1
+  #    A7 parity test, and lint (A1, A2-A5, A7, A8).
   # ---------------------------------------------------------------------------
   colcon:
     name: colcon build (ROS 2 Lyrical)
@@ -80,7 +80,7 @@ jobs:
           path: ${{ env.ACADOS_SOURCE_DIR }}
           key: acados-${{ env.ACADOS_TAG }}-${{ needs.get-container-digest.outputs.digest }}-${{ hashFiles('.github/workflows/colcon_build.yml') }}
 
-      # §2.2: build acados from the pinned tag. Deliberate deviation from the
+      # Build acados from the pinned tag. Deliberate deviation from the
       # recipe's `-DCMAKE_INSTALL_PREFIX=$PWD/../install`: that would put
       # libacados.so in acados/install/lib, but acados_template resolves
       # libraries from ${ACADOS_SOURCE_DIR}/lib (link_libs.json, git_commit_hash
@@ -108,9 +108,9 @@ jobs:
           pip install -r src/mpc-cbf/codegen/requirements.txt
           pip install -e "${ACADOS_SOURCE_DIR}/interfaces/acados_template"
 
-      # §14.2: codegen runs before colcon build, always. Cache keyed on the
-      # acados tag + a hash of codegen/. file(GLOB CONFIGURE_DEPENDS) in
-      # CMakeLists.txt §3.3 handles the "restored cache adds files after
+      # Codegen runs before colcon build, always. Cache keyed on the acados
+      # tag + a hash of codegen/. file(GLOB CONFIGURE_DEPENDS) in
+      # CMakeLists.txt handles the "restored cache adds files after
       # configure" caveat by re-globbing at build time.
       - name: Restore generated solvers from cache
         id: cache-codegen
@@ -140,7 +140,7 @@ jobs:
           colcon build --symlink-install \
             --cmake-args -DCMAKE_BUILD_TYPE=Release -DBUILD_TESTING=ON
 
-      # §14.4: both flags are needed - the first fails the job, the second
+      # Both flags are needed - the first fails the job, the second
       # prints *what* failed. Runs gtest, the ament linters, and the A7 parity
       # test (ament_add_pytest_test wires MPC_CBF_CPP_SOLVE_CLI; the venv has
       # acados_template, so A7 is verified here, not in the python job).
@@ -165,7 +165,7 @@ jobs:
           path: src/mpc-cbf/build/**/test_results/**/*.xml
 
   # ---------------------------------------------------------------------------
-  # 2. Python: unit tests + reproduction notebook execution (A6, A9). §14.1
+  # 2. Python: unit tests + reproduction notebook execution (A6, A9).
   #    Runs in the same container so the acados cache is shared (identical
   #    glibc; a cache saved by the colcon job would not run on the bare
   #    ubuntu-latest host). setup-python supplies Python 3.13 (spec: CI on 3.13).
@@ -249,7 +249,7 @@ jobs:
 
   # ---------------------------------------------------------------------------
   # 3. Docs: the three LaTeX derivations are a deliverable; a broken derivation
-  #    fails the job. §14.6
+  #    fails the job.
   # ---------------------------------------------------------------------------
   docs:
     name: build derivations

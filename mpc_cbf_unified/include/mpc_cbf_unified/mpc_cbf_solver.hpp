@@ -1,9 +1,6 @@
 // Copyright (c) 2026, Ali-Eimaan. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// SKELETON — declarations only. Every method is specified by its doc comment;
-// no bodies live in this header. See .deepseek/06_SOLVER.md.
-//
 // Discrete-time MPC with discrete-time control barrier function (DCBF)
 // constraints, following:
 //   [1] J. Zeng, B. Zhang, K. Sreenath, "Safety-Critical Model Predictive
@@ -40,7 +37,7 @@ enum class SolverStatus
 };
 
 /// Prediction model used by the solver. Selects which acados-generated solver
-/// is loaded and fixes (nx, nu). See .deepseek/06_SOLVER.md §6.2.
+/// is loaded and fixes (nx, nu).
 enum class ModelType
 {
   kDoubleIntegrator2D = 0,  ///< nx=4  x=[px,py,vx,vy],      nu=2 u=[ax,ay]
@@ -63,7 +60,7 @@ enum class CbfVariant
 
 /// One circular/spherical obstacle in the world frame. Only the first
 /// `kMaxObstacles` entries handed to solve() are passed to the solver; the
-/// remainder are dropped after the distance-based pruning described in §6.4.
+/// remainder are dropped after the distance-based pruning in solve().
 struct ObstacleState
 {
   Eigen::Vector3d position{Eigen::Vector3d::Zero()};   ///< [m]; z ignored for 2-D models.
@@ -130,14 +127,14 @@ struct SolverDiagnostics
   int first_active_cbf_step{-1};
   /// Obstacle index owning `first_active_cbf_step`, or -1.
   int first_active_obstacle{-1};
-  /// Human-readable cause, filled only when status != kSuccess. See §6.7.
+  /// Human-readable cause, filled only when status != kSuccess.
   std::string infeasibility_reason;
 
   /// Tube solver only: times u_applied hit the input bounds. A saturating
-  /// ancillary law voids the tube guarantee (08_TUBE.md §8.5); this counter
+  /// ancillary law voids the tube guarantee; this counter
   /// is how the robustness tests notice it. Always 0 for MpcCbfSolver.
   int clip_count{0};
-  /// Tube solver only: times the z_0 policy reset the tube (08_TUBE.md §8.5).
+  /// Tube solver only: times the z_0 policy reset the tube.
   /// A controller that resets every step is not running a tube.
   int tube_resets{0};
 };
@@ -221,7 +218,7 @@ public:
   const CbfConfig & cbfConfig() const;
 
   /// h_j(x) for obstacle j evaluated on a single state, using the same
-  /// definition the generated solver enforces (§6.6). Exposed for tests,
+  /// definition the generated solver enforces. Exposed for tests,
   /// notebooks (via the C API) and the node's diagnostics publisher.
   /// Positive means safe.
   static double barrierValue(

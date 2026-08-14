@@ -3,7 +3,6 @@
 """
 Recursive-feasibility study, Python side.
 
-This is the Python-side half of the study in (.deepseek/11_PYTHON_REFERENCE.md).
 The feasibility sweep (hundreds of solves over a grid of initial states and a
 sweep of gamma and horizon) belongs in Python + numpy + the acados interface,
 not in gtest. It shares the model definitions with codegen/models.py and the
@@ -83,12 +82,12 @@ RESULTS_DIR = Path(__file__).resolve().parents[2] / 'results'
 
 def _parameter_vector(stage: int, obstacles: list[dict]) -> np.ndarray:
     """
-    Build one stage's parameter vector, layout per §5.3.
+    Build one stage's parameter vector.
 
     [o_0(7), ..., o_7(7), gamma] with slot j = [position(3), velocity(3),
     radius]. Positions are propagated at constant velocity (dynamic obstacles
     only), and the radius is inflated once by ego_radius + safety_margin —
-    exactly what the C++ solver's solve() does (§6.4).
+    exactly what the C++ solver's solve() does.
     """
     p = np.zeros(7 * N_OBSTACLES + 1)
     for j in range(N_OBSTACLES):
@@ -129,8 +128,8 @@ def _set_initial_state(solver, x0: np.ndarray) -> None:
 
     Warm starting of the *horizon* is a separate concern, controlled by the
     ``warm`` argument of ``_solve``: ``'coast'`` for an independent problem
-    (constant-x0 rollout, u = 0 -- the C++ runtime's cold start, 06_SOLVER.md
-    §6.5) and ``'shift'`` for a closed-loop step (the solver's previous
+    (constant-x0 rollout, u = 0 -- the C++ runtime's cold start) and
+    ``'shift'`` for a closed-loop step (the solver's previous
     solution is exactly the MPC-shifted guess, which is what the C++ runtime
     does between steps). Pinning only stage 0 here keeps both semantics
     identical up to the guess, which is what the parity test (A7) relies on.
@@ -144,7 +143,7 @@ def _coast_warm_start(solver, x0: np.ndarray) -> None:
     """
     Cold start: constant-x0 rollout on stages 1..N, u = 0 everywhere.
 
-    This is the C++ runtime's cold start (06_SOLVER.md §6.5) and the ACC 2021
+    This is the C++ runtime's cold start and the ACC 2021
     notebook's first-solve guess. Use it for *independent* solves (grid
     sweeps): a stale warm start from a different initial state is the classic
     route to status 4 (ACADOS_MINSTEP) at the first SQP linearization.
@@ -172,7 +171,7 @@ def _solve(
 
     ``warm='shift'`` (default) keeps the solver's previous solution as the
     guess -- exactly the MPC shift the C++ runtime performs between
-    closed-loop steps (§6.5). ``warm='coast'`` overwrites the horizon with a
+    closed-loop steps. ``warm='coast'`` overwrites the horizon with a
     constant-x0 rollout and zero inputs -- the cold start for an independent
     problem.
     """
@@ -338,7 +337,7 @@ def test_persistent_feasibility_along_closed_loop(feasible_start_grid):
     """
     Check 100 closed-loop steps per start feasible at k=0.
 
-    Warm-start semantics mirror the C++ runtime (06_SOLVER.md §6.5): the
+    Warm-start semantics mirror the C++ runtime: the
     first solve at each start is a coasting cold start, every subsequent step
     warm starts from the previous solution (the MPC shift). A fresh solver is
     built in-test so the failure count is deterministic and independent of
@@ -374,7 +373,7 @@ def test_persistent_feasibility_along_closed_loop(feasible_start_grid):
             xk = _closed_loop_step(xk, u0)
 
     # The failures list is the scientific result: DT-CBF constraints do not
-    # by themselves guarantee recursive feasibility (01_OVERVIEW.md §1.6), so
+    # by themselves guarantee recursive feasibility, so
     # print it rather than only asserting. Calibrated on the 20x20 grid with
     # the coast-then-shift semantics above: 34 of 352 feasible starts (9.7 %)
     # lost feasibility within 100 steps, mostly status 2 (ACADOS_MAXITER) at
@@ -455,7 +454,7 @@ def test_infeasibility_is_recoverable_with_relaxed_decay(feasible_start_grid):
             if status == 0:
                 recovered_infeasible.append(x0)
                 # Safety is not optional: omega_k * gamma <= 1 must hold on
-                # every stage of every recovered solve (04_MODELS.md §4.5).
+                # every stage of every recovered solve.
                 # Read the trajectory *now* -- the next retry overwrites it.
                 for k in range(n_stages):
                     u = np.array(relaxed.get(k, 'u'))
@@ -560,7 +559,7 @@ def test_longer_horizon_enlarges_feasible_set(horizon, feasible_start_grid):
     """
     Feasible fraction at one horizon (the ordering is asserted separately).
 
-    The test keeps the §11.3 identifier even though the measured ordering
+    The test keeps its original identifier even though the measured ordering
     refines its claim -- see test_feasible_fraction_is_monotone_in_horizon.
     """
     fraction = _feasible_fraction_horizon(feasible_start_grid, horizon)
@@ -570,9 +569,9 @@ def test_longer_horizon_enlarges_feasible_set(horizon, feasible_start_grid):
 
 def test_feasible_fraction_is_monotone_in_horizon(feasible_start_grid):
     """
-    The measured N-dependence is monotone (documented deviation, §11.3).
+    The measured N-dependence is monotone (documented deviation).
 
-    §11.3 specifies "feasible fraction non-decreasing in N" -- the paper's
+    The design intent was "feasible fraction non-decreasing in N" -- the paper's
     CBF-QP-versus-MPC-CBF argument, quantified at N = 1. With neutral
     per-start coasting cold starts on this grid the measured curve is the
     opposite: 1.000, 1.000, 1.000, 0.989, 0.972 for N = 1, 3, 5, 8, 15 at
@@ -617,7 +616,16 @@ def _cpp_solve_cli() -> Path | None:
 
 
 def test_python_and_cpp_agree_on_first_input(solver, feasible_start_grid):
-    """Both front-ends must produce the same u0 to 1e-6 over 50 states (A7)."""
+    """
+    Both front-ends must produce the same u0 to 1e-6 over 50 states (A7).
+
+    Both sides solve each of the 50 states as an *independent* problem from the
+    u = 0 coasting rollout. That matters: this fixture's solver is module-scoped
+    and cpp_solve_cli serves every request from one process, so the default
+    ``warm='shift'`` would warm-start each solve from the previous, unrelated
+    state -- and the two front-ends would then be comparing different problems,
+    not different implementations of the same one.
+    """
     cli = _cpp_solve_cli()
     if cli is None:
         pytest.skip(
@@ -659,7 +667,7 @@ def test_python_and_cpp_agree_on_first_input(solver, feasible_start_grid):
         )
         u0_cpp = np.array(reply['u0'])
         x0 = np.array([starts[checked][0], starts[checked][1], 0.0, 0.0])
-        _, u0_py = _solve(solver, x0, obstacles)
+        _, u0_py = _solve(solver, x0, obstacles, warm='coast')
         worst = max(worst, float(np.max(np.abs(u0_py - u0_cpp))))
         checked += 1
 
@@ -668,5 +676,5 @@ def test_python_and_cpp_agree_on_first_input(solver, feasible_start_grid):
     assert worst < 1e-6, (
         f'C++/Python disagree on u0 by {worst:.3g} (bound 1e-6); '
         'check barrier_expression vs barrierValue, parameter layout, '
-        'obstacle propagation, and yref (§11.5)'
+        'obstacle propagation, and yref'
     )

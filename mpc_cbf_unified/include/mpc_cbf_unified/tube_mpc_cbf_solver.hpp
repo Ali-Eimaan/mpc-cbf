@@ -1,8 +1,6 @@
 // Copyright (c) 2026, Ali-Eimaan. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// SKELETON — declarations only. See .deepseek/08_TUBE.md.
-//
 // Tube MPC-CBF: robust safety for
 //     x_{k+1} = f(x_k, u_k) + w_k,   w_k in W (compact, contains 0)
 // via a nominal trajectory z, an ancillary feedback u = v + K (x - z), and an
@@ -51,7 +49,7 @@ struct TubeConfig
 
   /// kNone (nominal, un-tightened CBF) exists only for the A8 ablation. Refuse
   /// to initialise with it unless this flag is set, so the unsafe mode cannot
-  /// be reached from a launch file by accident (08_TUBE.md §8.4).
+  /// be reached from a launch file by accident.
   bool allow_unsafe_ablation{false};
 
   /// Recompute Omega whenever the linearisation point moves further than this
@@ -106,7 +104,7 @@ public:
   bool isInitialized() const;
 
   /// Solve for the current *true* state. The nominal state z_0 is chosen per
-  /// §8.5 (initial-state strategy), not simply set to x0.
+  /// the initial-state strategy, not simply set to x0.
   TubeMpcCbfSolution solve(
     const Eigen::VectorXd & x0,
     const std::vector<ObstacleState> & obstacles);
@@ -141,7 +139,7 @@ private:
   /// never order-reduced (verifyInvariance then certifies the zonotope via the
   /// closed-form certificate), otherwise the polytope (LP fallback). The margin
   /// and the tightened sets must be consistent with the certificate, and this
-  /// keeps the per-solve hot path LP-free (§8.4).
+  /// keeps the per-solve hot path LP-free.
   double omegaSupport(const Eigen::VectorXd & direction) const;
 };
 

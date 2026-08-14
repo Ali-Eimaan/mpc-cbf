@@ -1,7 +1,7 @@
 // Copyright (c) 2026, Ali-Eimaan. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// Implementation of MpcCbfSolver per .deepseek/06_SOLVER.md.
+// Implementation of MpcCbfSolver.
 //
 // Layout note: everything acados-specific lives under #if MPC_CBF_WITH_ACADOS;
 // the #else branch builds a stub whose initialize() returns false and whose
@@ -24,10 +24,9 @@
 #include <vector>
 
 #if MPC_CBF_WITH_ACADOS
-// Generated per configuration (codegen/generate_mpc_cbf_solver.py --all,
-// §5.6). The include directory is SYSTEM in CMake: acados' code is not
-// -Wconversion-clean and must not silence our own warnings (03_BUILD_SYSTEM.md
-// §3.3).
+// Generated per configuration (codegen/generate_mpc_cbf_solver.py --all).
+// The include directory is SYSTEM in CMake: acados' code is not
+// -Wconversion-clean and must not silence our own warnings.
 //
 // Status macros (ACADOS_SUCCESS, ACADOS_MAXITER, ...) live in
 // acados/utils/types.h (the generated acados_solver_*.h header used to be
@@ -88,8 +87,7 @@ std::string toLower(std::string s)
 }
 
 // Diagnostic-only threshold: a DCBF row is "active" when its slack drops
-// below this. It never influences a constraint, a status or a control
-// (06_SOLVER.md §6.7).
+// below this. It never influences a constraint, a status or a control.
 #if MPC_CBF_WITH_ACADOS
 constexpr double kActiveTolerance = 1.0e-3;
 #endif  // MPC_CBF_WITH_ACADOS
@@ -111,8 +109,12 @@ struct AcadosSolverApi
   int (*create)(void *) = nullptr;
   int (*solve)(void *) = nullptr;
   int (*update_params)(void *, int, double *, int) = nullptr;
-  void (*free_solver)(void *) = nullptr;
-  void (*free_capsule)(void *) = nullptr;
+  // acados' generated free functions return int; declaring them void here
+  // would make the cast below change the return type too, which is UB when
+  // called through (-Wcast-function-type). The result is a status code we
+  // have no recovery for during teardown, so it is discarded at the call site.
+  int (*free_solver)(void *) = nullptr;
+  int (*free_capsule)(void *) = nullptr;
   ocp_nlp_config * (*get_config)(void *) = nullptr;
   ocp_nlp_dims * (*get_dims)(void *) = nullptr;
   ocp_nlp_in * (*get_in)(void *) = nullptr;
@@ -129,8 +131,8 @@ struct AcadosSolverApi
     api.update_params = reinterpret_cast<int (*)( \
           void *, int, double *, \
           int)>(NAME ## _acados_update_params); \
-    api.free_solver = reinterpret_cast<void (*)(void *)>(NAME ## _acados_free); \
-    api.free_capsule = reinterpret_cast<void (*)(void *)>(NAME ## _acados_free_capsule); \
+    api.free_solver = reinterpret_cast<int (*)(void *)>(NAME ## _acados_free); \
+    api.free_capsule = reinterpret_cast<int (*)(void *)>(NAME ## _acados_free_capsule); \
     api.get_config = reinterpret_cast<ocp_nlp_config * (*)(void *)>(NAME ## _acados_get_nlp_config); \
     api.get_dims = reinterpret_cast<ocp_nlp_dims * (*)(void *)>(NAME ## _acados_get_nlp_dims); \
     api.get_in = reinterpret_cast<ocp_nlp_in * (*)(void *)>(NAME ## _acados_get_nlp_in); \
@@ -170,7 +172,7 @@ struct MpcCbfSolver::Impl
   int nx{0};
   int nu{0};          ///< Physical inputs only (never includes omega).
   int nu_total{0};    ///< nu + n_obs under kRelaxedDecay, nu otherwise.
-  int np{0};          ///< Parameter vector length per stage (.deepseek/05_CODEGEN.md §5.3).
+  int np{0};          ///< Parameter vector length per stage.
   int cbf_horizon{0}; ///< Resolved: in [1, mpc.horizon].
 
   Eigen::MatrixXd x_ref;     ///< nx x (N+1) reference trajectory.
@@ -249,10 +251,10 @@ MpcCbfSolver::~MpcCbfSolver()
 #if MPC_CBF_WITH_ACADOS
   if (impl_ && impl_->capsule != nullptr) {
     if (impl_->api.free_solver != nullptr) {
-      impl_->api.free_solver(impl_->capsule);
+      static_cast<void>(impl_->api.free_solver(impl_->capsule));
     }
     if (impl_->api.free_capsule != nullptr) {
-      impl_->api.free_capsule(impl_->capsule);
+      static_cast<void>(impl_->api.free_capsule(impl_->capsule));
     }
     impl_->capsule = nullptr;
   }
@@ -357,7 +359,7 @@ bool MpcCbfSolver::initialize()
   // needs omega_max * gamma <= 1 (safety, 16_CONVENTIONS.md §16.3). The 1e-9
   // slack is load-bearing: the YAML defaults are gamma=0.3 and omega_max=3.0,
   // whose product is 1.0 to within a rounding error, and that exact boundary
-  // case is accepted (10_TESTS.md: RejectsUnsafeOmegaBound).
+  // case is accepted (RejectsUnsafeOmegaBound).
   if (!(cbf.gamma > 0.0 && cbf.gamma <= 1.0)) {
     return reject("cbf.gamma (must be in (0, 1])", cbf.gamma);
   }
@@ -567,8 +569,7 @@ bool MpcCbfSolver::initialize()
   // --- cost weights: W = blkdiag(Q, R[, I_omega]) ---------------------------
   // The relaxed_decay cost uses a pre-scaled residual sqrt(omega_weight)*(w-1)
   // in the code generator, so the identity weight on the omega block is
-  // correct: the total contribution is omega_weight*(w-1)^2 (05_CODEGEN.md
-  // §5.5).
+  // correct: the total contribution is omega_weight*(w-1)^2.
   {
     Eigen::MatrixXd W = Eigen::MatrixXd::Zero(impl_->nu_total + nx, impl_->nu_total + nx);
     W.topLeftCorner(nx, nx) = Eigen::Map<const Eigen::VectorXd>(mpc.Q.data(), nx).asDiagonal();
@@ -1113,8 +1114,7 @@ void MpcCbfSolver::warmStart(const Eigen::MatrixXd & x_guess, const Eigen::Matri
     impl_->x_guess = x_guess;
     impl_->u_guess = u_guess;
   } else {
-    // A mismatched warm start is ignored silently: it must never break a solve
-    // (06_SOLVER.md §6.5).
+    // A mismatched warm start is ignored silently: it must never break a solve.
     impl_->x_guess.resize(0, 0);
     impl_->u_guess.resize(0, 0);
   }
@@ -1167,10 +1167,9 @@ double MpcCbfSolver::barrierValue(
   double inflation_radius)
 {
   // Squared-distance barrier matching the CasADi expression in
-  // codegen/generate_mpc_cbf_solver.py exactly (04_MODELS.md §4.4, 06_SOLVER.md
-  // §6.6):
+  // codegen/generate_mpc_cbf_solver.py exactly:
   //   h(x) = ||p(x) - p_obs||^2 - (r_obs + inflation_radius)^2
-  // Position indices are (0, 1) for every model (§16.2); for the planar
+  // Position indices are (0, 1) for every model; for the planar
   // quadrotor index 1 is pz. No square roots anywhere: any divergence between
   // this function and the generated expression makes every diagnostic lie
   // (test: BarrierMatchesGeneratedCode).

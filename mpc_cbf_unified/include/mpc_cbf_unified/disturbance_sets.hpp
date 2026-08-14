@@ -1,8 +1,6 @@
 // Copyright (c) 2026, Ali-Eimaan. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// SKELETON — declarations only. See .deepseek/07_SETS.md.
-//
 // Convex set utilities for the tube-MPC-CBF pipeline: H-representation
 // polytopes, zonotopes, Minkowski sums, support functions, and an outer
 // approximation of the minimal robust positively invariant (mRPI) set.

@@ -2,8 +2,8 @@
 // SPDX-License-Identifier: BSD-3-Clause
 //
 // Implementation of the set machinery in disturbance_sets.hpp (Polytope,
-// Zonotope, RPI approximation — 07_SETS.md) and of the robust tube-MPC-CBF
-// solver declared in tube_mpc_cbf_solver.hpp (08_TUBE.md).
+// Zonotope, RPI approximation) and of the robust tube-MPC-CBF
+// solver declared in tube_mpc_cbf_solver.hpp.
 //
 // The set machinery and its only consumer stay in one translation unit for
 // the first version; split the set part out once it exceeds ~600 lines.
@@ -28,9 +28,8 @@
 #include "mpc_cbf_unified/disturbance_sets.hpp"
 
 #if MPC_CBF_WITH_ACADOS
-// Generated per configuration (codegen/generate_tube_solver.py --all, §5.7).
-// Same SYSTEM-include arrangement as mpc_cbf_solver.cpp (03_BUILD_SYSTEM.md
-// §3.3).
+// Generated per configuration (codegen/generate_tube_solver.py --all).
+// Same SYSTEM-include arrangement as mpc_cbf_solver.cpp.
 #include "acados_c/ocp_nlp_interface.h"
 #include "acados/utils/types.h"
 #include "acados_solver_tube_mpc_cbf_double_integrator_2d_N8_lipschitz.h"
@@ -1310,7 +1309,7 @@ RpiResult computeRpiSet(
       // (1 - alpha) is an RPI candidate whose Hausdorff distance to the
       // true mRPI is bounded by epsilon. The exact certificate is re-checked
       // in TubeMpcCbfSolver::initialize (verifyInvariance) as a final gate
-      // ([07_SETS.md] §7.5), so no per-iteration certificate is needed here.
+      // so no per-iteration certificate is needed here.
       const double scale = 1.0 / (1.0 - alpha);
       out.zonotope_set = Zonotope(F.center() * scale, F.generators() * scale);
       out.set = out.zonotope_set.toPolytope();
@@ -1609,8 +1608,12 @@ namespace
     int (*create)(void *) = nullptr;
     int (*solve)(void *) = nullptr;
     int (*update_params)(void *, int, double *, int) = nullptr;
-    void (*free_solver)(void *) = nullptr;
-    void (*free_capsule)(void *) = nullptr;
+    // acados' generated free functions return int; declaring them void here
+    // would make the cast below change the return type too, which is UB when
+    // called through (-Wcast-function-type). The result is a status code we
+    // have no recovery for during teardown, so it is discarded at the call site.
+    int (*free_solver)(void *) = nullptr;
+    int (*free_capsule)(void *) = nullptr;
     ocp_nlp_config * (*get_config)(void *) = nullptr;
     ocp_nlp_dims * (*get_dims)(void *) = nullptr;
     ocp_nlp_in * (*get_in)(void *) = nullptr;
@@ -1627,8 +1630,8 @@ namespace
     api.update_params = reinterpret_cast<int (*)( \
           void *, int, double *, \
           int)>(NAME ## _acados_update_params); \
-    api.free_solver = reinterpret_cast<void (*)(void *)>(NAME ## _acados_free); \
-    api.free_capsule = reinterpret_cast<void (*)(void *)>(NAME ## _acados_free_capsule); \
+    api.free_solver = reinterpret_cast<int (*)(void *)>(NAME ## _acados_free); \
+    api.free_capsule = reinterpret_cast<int (*)(void *)>(NAME ## _acados_free_capsule); \
     api.get_config = reinterpret_cast<ocp_nlp_config * (*)(void *)>(NAME ## _acados_get_nlp_config); \
     api.get_dims = reinterpret_cast<ocp_nlp_dims * (*)(void *)>(NAME ## _acados_get_nlp_dims); \
     api.get_in = reinterpret_cast<ocp_nlp_in * (*)(void *)>(NAME ## _acados_get_nlp_in); \
@@ -1699,8 +1702,8 @@ struct TubeMpcCbfSolver::Impl
   ocp_nlp_out * nlp_out{nullptr};
   ocp_nlp_solver * nlp_solver{nullptr};
 
-  // Solution pool: identical rationale to MpcCbfSolver::Impl (06_SOLVER.md
-  // §6.3) — the hot path must not allocate.
+  // Solution pool: identical rationale to MpcCbfSolver::Impl — the hot
+  // path must not allocate.
   std::array<TubeMpcCbfSolution, 12> solution_pool;
   size_t pool_head{0};
 #endif
@@ -1741,10 +1744,10 @@ TubeMpcCbfSolver::~TubeMpcCbfSolver()
 #if MPC_CBF_WITH_ACADOS
   if (impl_ && impl_->capsule != nullptr) {
     if (impl_->api.free_solver != nullptr) {
-      impl_->api.free_solver(impl_->capsule);
+      static_cast<void>(impl_->api.free_solver(impl_->capsule));
     }
     if (impl_->api.free_capsule != nullptr) {
-      impl_->api.free_capsule(impl_->capsule);
+      static_cast<void>(impl_->api.free_capsule(impl_->capsule));
     }
     impl_->capsule = nullptr;
   }

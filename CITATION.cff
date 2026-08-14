@@ -1,0 +1,74 @@
+cff-version: 1.2.0
+title: >-
+  mpc-cbf: Discrete-time MPC with control barrier function
+  constraints, with a tube-MPC-CBF extension
+message: If you use this software, please cite it as below.
+type: software
+authors:
+  - family-names: Eimaan
+    given-names: Ali
+version: 1.0.0
+date-released: '2026-08-15'
+license: BSD-3-Clause
+repository-code: https://github.com/Ali-Eimaan/mpc-cbf
+abstract: >-
+  A single-agent safety-critical predictive controller in C++/acados and Python.
+  Discrete-time control barrier function constraints are imposed along an MPC
+  prediction horizon (Zeng, Zhang and Sreenath, ACC 2021), optionally with the
+  decay rate as a decision variable (Zeng, Li and Sreenath, CDC 2021), plus a
+  tube-MPC-CBF extension that tightens every constraint by an offline robust
+  positively invariant set so the safety guarantee holds for the true state
+  under bounded disturbance. Both source papers are reproduced figure by
+  figure, with the matched values, tolerances and deviations recorded.
+keywords:
+  - control barrier function
+  - model predictive control
+  - safety-critical control
+  - robust MPC
+  - tube MPC
+  - acados
+  - ROS 2
+references:
+  - type: conference-paper
+    title: >-
+      Safety-Critical Model Predictive Control with Discrete-Time Control
+      Barrier Function
+    authors:
+      - family-names: Zeng
+        given-names: Jun
+      - family-names: Zhang
+        given-names: Bike
+      - family-names: Sreenath
+        given-names: Koushil
+    collection-title: 2021 American Control Conference (ACC)
+    year: 2021
+  - type: conference-paper
+    title: >-
+      Enhancing Feasibility and Safety of Nonlinear Model Predictive Control
+      with Discrete-Time Control Barrier Functions
+    authors:
+      - family-names: Zeng
+        given-names: Jun
+      - family-names: Li
+        given-names: Zhongyu
+      - family-names: Sreenath
+        given-names: Koushil
+    collection-title: >-
+      2021 60th IEEE Conference on Decision and Control (CDC)
+    year: 2021
+  - type: article
+    title: >-
+      Invariant approximations of the minimal robust positively invariant set
+    authors:
+      - family-names: Raković
+        given-names: Saša V.
+      - family-names: Kerrigan
+        given-names: Eric C.
+      - family-names: Kouramas
+        given-names: Konstantinos I.
+      - family-names: Mayne
+        given-names: David Q.
+    journal: IEEE Transactions on Automatic Control
+    volume: 50
+    issue: 3
+    year: 2005

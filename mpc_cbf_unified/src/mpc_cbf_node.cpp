@@ -1,7 +1,7 @@
 // Copyright (c) 2026, Ali-Eimaan. All rights reserved.
 // SPDX-License-Identifier: BSD-3-Clause
 //
-// ROS 2 wrapper around MpcCbfSolver / TubeMpcCbfSolver. See .deepseek/09_NODE.md.
+// ROS 2 wrapper around MpcCbfSolver / TubeMpcCbfSolver.
 
 #include "mpc_cbf_unified/mpc_cbf_node.hpp"
 

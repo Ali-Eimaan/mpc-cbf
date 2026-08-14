@@ -6,15 +6,23 @@ two source papers were reproduced, which numbers matched, to what tolerance, and
 
 ## Environment
 
-| Item | Value |
-|---|---|
-| Date of run | 2026-08-14 |
-| Commit | `282e3470b5036ad7f199e1932599e1ee52b3cea0` |
-| OS / compiler | Linux 7.0.0-29-generic / gcc 15.2.0 (Ubuntu 15.2.0-16ubuntu1) |
-| acados version (tag + commit) | v0.6.0, commit `503364817c872d474ab5bed219c26760ac267769` |
-| CasADi / numpy / scipy | casadi 3.7.2 / numpy 2.5.2 / scipy 1.18.0 |
-| QP solver | HPIPM (partial condensing) |
-| CPU | Intel Core i7-7600U @ 2.80 GHz |
+The figures below were produced on the development machine and **re-executed
+unchanged in the release container** before tagging `v1.0.0`; both notebooks
+assert their own numbers, so a regression would have failed the run.
+
+| Item | Development run (numbers below) | Release re-run |
+|---|---|---|
+| Date | 2026-08-14 | 2026-08-15 |
+| Release tag | — | `v1.0.0` |
+| OS / compiler | Linux 7.0.0-29-generic / gcc 15.2.0 | `ros:lyrical-ros-base` (Ubuntu 26.04) / gcc 15.2.0 |
+| acados | v0.6.0, commit `503364817c872d474ab5bed219c26760ac267769` | v0.6.0 |
+| CasADi / numpy / scipy | 3.7.2 / 2.5.2 / 1.18.0 | 3.7.2 / 2.5.2 / 1.18.0 |
+| QP solver | HPIPM (partial condensing) | HPIPM (partial condensing) |
+| CPU | Intel Core i7-7600U @ 2.80 GHz | not quoted — timings come from the development run only |
+
+Solve times are quoted from the development run on the CPU named above. The
+container re-run confirms the safety and feasibility numbers, not the timings:
+a containerised measurement on shared hardware is not a number worth defending.
 
 ## Paper 1 — Zeng, Zhang & Sreenath, ACC 2021
 
@@ -22,7 +30,7 @@ two source papers were reproduced, which numbers matched, to what tolerance, and
 
 ### Figure-by-figure
 
-> Figure map verified against the arXiv HTML (the earlier skeleton's "Fig. 2/3/4/6–8" labels were wrong).
+> Figure map verified against the arXiv HTML (an earlier draft's "Fig. 2/3/4/6–8" labels were wrong).
 
 | Paper figure | What it shows | Reproduced? | Our value | Paper value | Tolerance | Notebook cell |
 |---|---|---|---|---|---|---|

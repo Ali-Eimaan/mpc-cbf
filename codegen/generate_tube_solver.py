@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """acados code generation for the tube-MPC-CBF nominal solver.
 
-Exactly three differences from generate_mpc_cbf_solver.py (.deepseek/05_CODEGEN.md §5.7);
+Exactly three differences from generate_mpc_cbf_solver.py;
 everything else is shared and imported, never copied:
   1. decision variables are the *nominal* (z, v), not the true (x, u),
   2. the per-stage parameter vector is extended by one tightening scalar
      c_{j,k} per obstacle:  np = 7*n_obstacles + 1 + n_obstacles  (65 for 8),
-  3. the barrier rows become (08_TUBE.md §8.4 — read the derivation before
+  3. the barrier rows become (read the derivation before
      touching the sign):
          distance:  h_j(z_k) - c_{j,k}                          >= 0
          DCBF:      h_j(F(z_k,v_k)) - h_j(z_k) + gamma*(h_j(z_k) - c_{j,k}) >= 0
@@ -20,7 +20,7 @@ second implementation is how the two end up disagreeing.
 
 z_{k+1} in the DCBF row is obtained by substituting the discrete dynamics
 F(z_k, v_k) into the barrier expression, exactly as the nominal generator does
-(05_CODEGEN.md §5.4 step 7).
+(as in the nominal generator).
 
 Usage:
     python generate_tube_solver.py --model double_integrator_2d \
@@ -57,7 +57,7 @@ except ImportError:  # Imported as codegen.generate_tube_solver from the repo ro
         linearised_discrete,
     )
 
-# Reused, not copied (§5.7): the acados classes (with the lazy-unavailable
+# Reused, not copied: the acados classes (with the lazy-unavailable
 # stub), the parameter-layout constants, the large finite bound, and the
 # default weights. The nominal solver_name/parse_solver_name are NOT reused:
 # tube names end in the tighten mode, not a variant.
@@ -125,7 +125,7 @@ def _coerce_model_key(model_name: str) -> str:
 
 
 def _girard_reduce(generators: np.ndarray, max_generators: int) -> np.ndarray:
-    """Girard's order reduction (07_SETS.md §7.4): keep the max_generators - n
+    """Girard's order reduction: keep the max_generators - n
     generators with the largest ||g||_1 - ||g||_inf, replace the rest by the
     diagonal box of their absolute row sums. Never shrinks the set."""
     n, m = generators.shape
@@ -144,7 +144,7 @@ def _rakovic_rpi(
     epsilon: float = 1.0e-3,
     max_iterations: int = 100,
 ) -> tuple[float, int, np.ndarray]:
-    """Raković mRPI iteration (07_SETS.md §7.5), mirroring
+    """Raković mRPI iteration, mirroring
     computeRpiSet() in tube_mpc_cbf_solver.cpp: no in-loop invariance
     certificate, break on  alpha/(1-alpha) * M(s) <= epsilon.
 
@@ -267,7 +267,7 @@ def _tube_barrier_rows(spec, n_obstacles: int, z, v, p, dt: float):
     within each type — so SolverDiagnostics::cbf_values indexes k*n_obs + j.
 
     The DCBF row substitutes F(z_k, v_k) for z_{k+1} — the same choice as the
-    nominal generator (05_CODEGEN.md §5.4 step 7)."""
+    nominal generator (as in the nominal generator)."""
     gamma = p[gamma_param_offset(n_obstacles)]
     method = "exact" if spec.name == "double_integrator_2d" else "rk4"
     F = discretise(spec, dt, method)
@@ -302,7 +302,7 @@ def build_tube_acados_model(model_name: str, dt: float, n_obstacles: int):
     model.disc_dyn_expr = F(z, v)
     # Stage 0 carries the same rows as every interior stage: with z_0 fixed
     # by the initial-state equality, the DCBF row constrains v_0 — the step
-    # actually applied to the plant (10_TESTS.md A3; the nominal generator
+    # actually applied to the plant (A3; the nominal generator
     # makes the identical choice). The distance row h_j(z_0) - c_j >= 0 is
     # what makes an unsafe start surface as infeasible.
     model.con_h_expr_0 = _tube_barrier_rows(spec, n_obstacles, z, v, p, dt)
@@ -321,7 +321,7 @@ def build_tube_ocp(
     """Return the AcadosOcp for the nominal tube problem.
 
     Identical cost structure and solver options to the nominal generator; the
-    three §5.7 differences live in build_tube_acados_model and the row
+    three differences live in build_tube_acados_model and the row
     expressions. Bounds are the YAML defaults — tightening is the C++ side's
     job, and it overwrites them from initialize() at runtime."""
     if tighten_mode not in TUBE_TIGHTEN_MODES:
@@ -384,7 +384,7 @@ def build_tube_ocp(
     p_default[gamma_param_offset(n_obstacles)] = 0.3
     ocp.parameter_values = p_default
 
-    # Solver options, identical to the nominal generator (§5.4 step 8):
+    # Solver options, identical to the nominal generator:
     # DISCRETE dynamics (never ERK), SQP or SQP_RTI, Levenberg-Marquardt for
     # the DCBF nonlinearities.
     ocp.solver_options.tf = horizon * dt  # stage duration = tf/N = dt
@@ -395,11 +395,11 @@ def build_tube_ocp(
     ocp.solver_options.nlp_solver_max_iter = max_sqp_iterations
     # LM regularization: 1e-4 leaves HPIPM's Newton system ill-conditioned on
     # degenerate CBF QPs (spurious ACADOS_MINSTEP). 1e-2 matches
-    # mpc_cbf_solver.cpp and generate_mpc_cbf_solver.py (05_CODEGEN.md §5.4).
+    # mpc_cbf_solver.cpp and generate_mpc_cbf_solver.py.
     ocp.solver_options.levenberg_marquardt = 1.0e-2
     ocp.solver_options.qp_solver_warm_start = 1
     ocp.solver_options.print_level = 0
-    # NLP termination tolerances, identical to the nominal generator (§5.4
+    # NLP termination tolerances, identical to the nominal generator (
     # step 8): 1e-3 for all four, matching the C++ runtime override in
     # tube_mpc_cbf_solver.cpp. See generate_mpc_cbf_solver.py for the
     # rationale (grazing-point res_stat/res_comp floors make the acados 1e-6
@@ -439,8 +439,8 @@ def generate_all(output_dir: str = DEFAULT_OUTPUT_DIR) -> list[str]:
     the lipschitz variant pinned by SupportTighteningDominatesLipschitz, and
     the tighten_mode="none" ablation used by the robustness sweep."""
     matrix = [
-        ("double_integrator_2d", 8, "support_function"),  # tube default (§8.4)
-        ("double_integrator_2d", 8, "lipschitz"),         # §8.4 ordering test
+        ("double_integrator_2d", 8, "support_function"),  # tube default
+        ("double_integrator_2d", 8, "lipschitz"),         # tightening-ordering test
         ("double_integrator_2d", 8, "none"),              # A8 ablation
     ]
     names = []

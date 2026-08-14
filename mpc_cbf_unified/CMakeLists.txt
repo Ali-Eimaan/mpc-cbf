@@ -1,12 +1,10 @@
 cmake_minimum_required(VERSION 3.22...3.31)
 project(mpc_cbf_unified)
 
-# SKELETON NOTE ---------------------------------------------------------------
-# The build graph is complete. acados-generated sources (from
+# acados-generated sources (from
 # codegen/generate_mpc_cbf_solver.py --all, run at the repo root) are globbed
 # under ../c_generated_code when ACADOS_SOURCE_DIR is set; without them the
 # library builds but the solver back-ends compile to stubs.
-# See .deepseek/03_BUILD_SYSTEM.md §3.2 for the acados discovery contract.
 # -----------------------------------------------------------------------------
 
 if(NOT CMAKE_CXX_STANDARD)
@@ -15,7 +13,8 @@ if(NOT CMAKE_CXX_STANDARD)
 endif()
 
 if(CMAKE_COMPILER_IS_GNUCXX OR CMAKE_CXX_COMPILER_ID MATCHES "Clang")
-  # -Wshadow/-Wconversion are deliberate: see .deepseek/03_BUILD_SYSTEM.md §3.5.
+  # -Wshadow/-Wconversion are deliberate: in numerical code they catch the
+  # int/Eigen::Index and float/double narrowing that silently loses precision.
   add_compile_options(-Wall -Wextra -Wpedantic -Wshadow -Wconversion)
 endif()
 
@@ -47,7 +46,7 @@ if(ACADOS_ROOT)
   set(MPC_CBF_WITH_ACADOS TRUE)
   # Generated solvers live in <repo-root>/c_generated_code/<solver_name>/ —
   # the DEFAULT_OUTPUT_DIR of codegen/generate_*_solver.py when run from the
-  # repo root (see .deepseek/05_CODEGEN.md §5.6). GLOB_RECURSE pulls in the
+  # repo root. GLOB_RECURSE pulls in the
   # flat acados export tree (model/, cost/, constraints/, acados_solver_*.c).
   # CONFIGURE_DEPENDS re-runs the glob on every build so a codegen step that
   # runs just before colcon build is picked up without a reconfigure.
@@ -87,7 +86,7 @@ target_link_libraries(${PROJECT_NAME} PUBLIC Eigen3::Eigen)
 
 if(MPC_CBF_WITH_ACADOS)
   target_compile_definitions(${PROJECT_NAME} PRIVATE MPC_CBF_WITH_ACADOS=1)
-  # acados + generated-code include dirs are SYSTEM (03_BUILD_SYSTEM.md §3.3):
+  # acados + generated-code include dirs are SYSTEM:
   # their headers are not -Wconversion-clean and must not silence our own
   # warnings. Each generated solver exports into its own subdirectory, so the
   # per-solver dirs join the include path individually (the sources include
@@ -118,7 +117,7 @@ if(MPC_CBF_WITH_ACADOS)
   endif()
 endif()
 
-# ament_target_dependencies is not available on lyrical (§3.4): use namespaced
+# ament_target_dependencies is not available on lyrical: use namespaced
 # targets. rclcpp is linked only for its logging macros (the library stays
 # ROS-message-free).
 target_link_libraries(${PROJECT_NAME} PUBLIC rclcpp::rclcpp)
@@ -150,7 +149,7 @@ install(TARGETS ${PROJECT_NAME}
 install(TARGETS mpc_cbf_node DESTINATION lib/${PROJECT_NAME})
 install(DIRECTORY launch config DESTINATION share/${PROJECT_NAME})
 
-# §3.7: the rclpy simulator/analysis nodes must be installed for `ros2 run` and
+# The rclpy simulator/analysis nodes must be installed for `ros2 run` and
 # the launch files to find them. Forgetting this block produces a launch
 # failure that names the executable but not the cause.
 install(PROGRAMS
@@ -187,7 +186,7 @@ if(BUILD_TESTING)
     target_link_libraries(test_tube_mpc_robustness ${PROJECT_NAME})
   endif()
 
-  # Test-only parity harness for A7 (§11.5). The pytest finds it through
+  # Test-only parity harness for A7. The pytest finds it through
   # MPC_CBF_CPP_SOLVE_CLI; ament_add_pytest_test accepts generator expressions
   # in the ENV list (deferred until test time).
   add_executable(cpp_solve_cli test/cpp_solve_cli.cpp)

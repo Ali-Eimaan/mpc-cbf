@@ -9,7 +9,7 @@ Integrates the kinematic bicycle model used by car_racing.launch.py:
     p_x_dot = v cos(theta),  p_y_dot = v sin(theta),
     theta_dot = v tan(delta) / L,  v_dot = a,
 with L = 0.35 m, sub-stepped below the control rate. cmd_vel.linear.x is the
-acceleration and cmd_vel.angular.z the steering angle (node convention §9.5).
+acceleration and cmd_vel.angular.z the steering angle (node convention).
 
 The lead vehicle is a CYLINDER marker moving along +x at `--lead-speed`
 (frame_locked := false, velocity in the `points` field). The ego must overtake

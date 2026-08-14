@@ -11,7 +11,7 @@ Usage:
         --horizon 8 --dt 0.1 --variant fixed_decay --n-obstacles 8
     python generate_mpc_cbf_solver.py --all      # every combination CI needs
 
-Choice of x_{k+1} in the DCBF row (see .deepseek/05_CODEGEN.md §5.4 step 7):
+Choice of x_{k+1} in the DCBF row:
 we SUBSTITUTE the discrete dynamics F(x_k, u_k) into the barrier expression,
 so the row h(F(x_k,u_k)) - h(x_k) + gamma*h(x_k) >= 0 is a function of stage
 k's (x_k, u_k) only. The alternative (constraining the next shooting node's
@@ -56,7 +56,7 @@ except ImportError:
 
 DEFAULT_OUTPUT_DIR = "c_generated_code"
 
-# Per-obstacle parameter layout (one slice per stage), .deepseek/05_CODEGEN.md §5.3:
+# Per-obstacle parameter layout (one slice per stage):
 #   [ox, oy, oz, vx, vy, vz, radius]          7 doubles
 #   ... repeated for n_obstacles
 #   gamma                                     +1  (np = 7*n_obs + 1)
@@ -68,9 +68,9 @@ def gamma_param_offset(n_obstacles: int) -> int:
     return OBS_PARAMS_PER_OBSTACLE * n_obstacles
 
 
-# Large finite upper bound — never np.inf, .deepseek/16_CONVENTIONS.md §16.4.
+# Large finite upper bound — never np.inf.
 # Must exceed the squared-distance barrier at the far-away dummy obstacles
-# h ~ 2e12 (position 1e6, §6.2); a bound of 1e9 makes the initial iterate
+# h ~ 2e12 (position 1e6); a bound of 1e9 makes the initial iterate
 # infeasible (res_ineq ~ 2e12) and the QP dies with HPIPM_MINSTEP.
 CONSTRAINT_UB = 1.0e13
 
@@ -107,7 +107,7 @@ def build_acados_model(model_name: str, dt: float, n_obstacles: int) -> AcadosMo
     """Assemble the AcadosModel: symbolic state, input, parameters, discrete dynamics.
 
     * x, u from the ModelSpec; p = obstacle block (7 entries per obstacle) +
-      [gamma] — the layout is documented in one place (§5.3) and mirrored by
+      [gamma] — the layout is documented in one place and mirrored by
       the C++ side (MpcCbfSolver::Impl).
     * model.disc_dyn_expr = discretise(spec, dt) so acados uses the DISCRETE
       integrator type; an ERK integrator here would silently change the CBF
@@ -151,9 +151,8 @@ def build_acados_model(model_name: str, dt: float, n_obstacles: int) -> AcadosMo
     # Stage 0 carries the same rows as every other interior stage: x_0 is
     # fixed, so the DCBF row h_j(F(x_0,u_0)) - h_j(x_0) + gamma*h_j(x_0) >= 0
     # reduces to a constraint on u_0 alone — the DCBF condition on the step
-    # that is actually applied to the plant (10_TESTS.md A3 requires it at
-    # k = 0 too, and 05_CODEGEN.md §5.4 step 6 documents this choice). The
-    # distance row h_j(x_0) >= 0 is what makes an unsafe start surface as
+    # that is actually applied to the plant (A3 requires it at k = 0 too).
+    # The distance row h_j(x_0) >= 0 is what makes an unsafe start surface as
     # infeasible instead of tracking a negative h.
     model.con_h_expr_0 = _barrier_rows(
         spec, variant, n_obstacles, x, u_phys, u, p, dt
@@ -178,7 +177,7 @@ def _barrier_rows(spec, variant, n_obstacles, x, u_phys, u, p, dt):
     Obstacle-major ordering within each row type.
 
     The DCBF row substitutes F(x_k, u_k) for x_{k+1} — the choice documented
-    in the module docstring (05_CODEGEN.md §5.4 step 7).
+    in the module docstring.
     """
     gamma = p[gamma_param_offset(n_obstacles)]
     method = "exact" if spec.name == "double_integrator_2d" else "rk4"
@@ -210,7 +209,7 @@ def build_ocp(
     use_rti: bool = False,
     max_sqp_iterations: int = 20,
 ) -> AcadosOcp:
-    """Return a fully configured AcadosOcp (assembly order per §5.4).
+    """Return a fully configured AcadosOcp.
 
     `model_name` is the MODEL KEY (registry key) unless it already parses as a
     full generated-solver name. cbf_horizon defaults to `horizon`.
@@ -273,7 +272,7 @@ def build_ocp(
 
     # 5-6. Barrier rows. con_h_expr (stages 0..N-1) carries distance + DCBF
     # rows — including stage 0, whose DCBF row constrains u_0, the step
-    # actually applied to the plant (10_TESTS.md A3); con_h_expr_e (stage N)
+    # actually applied to the plant (A3); con_h_expr_e (stage N)
     # carries distance rows only, since stage N has no u_N for a DCBF row.
     # The stage-0 distance row is what makes an unsafe start report infeasible
     # (InfeasibilityReasonIsPopulated).
@@ -309,7 +308,7 @@ def build_ocp(
     # degenerate CBF QPs (grazing trajectories, tight gamma), producing
     # spurious ACADOS_MINSTEP -> QP_FAILURE. 1e-2 regularizes the singular
     # directions; it must match mpc_cbf_solver.cpp (mpc_cbf_unified) so the
-    # JSON and the C++ runtime solve the same problem (16_CONVENTIONS.md).
+    # JSON and the C++ runtime solve the same problem.
     ocp.solver_options.levenberg_marquardt = 1.0e-2
     ocp.solver_options.qp_solver_warm_start = 1
     ocp.solver_options.print_level = 0
@@ -322,7 +321,7 @@ def build_ocp(
     # qp_iter_max and the SQP diverge from an otherwise-good KKT point. This
     # is not a safety weakening — the CBF safety contract is checked on the
     # returned trajectory (tests use 1e-6 on the barrier rows), not on solver
-    # residuals (16_CONVENTIONS.md §16.4).
+    # residuals.
     ocp.solver_options.nlp_solver_tol_stat = 1.0e-3
     ocp.solver_options.nlp_solver_tol_eq = 1.0e-3
     ocp.solver_options.nlp_solver_tol_ineq = 1.0e-3
@@ -361,7 +360,7 @@ def generate(output_dir: str = DEFAULT_OUTPUT_DIR, **kwargs) -> str:
 
 
 def generate_all(output_dir: str = DEFAULT_OUTPUT_DIR) -> list[str]:
-    """Generate every configuration the tests and launch files need (§5.6)."""
+    """Generate every configuration the tests and launch files need."""
     matrix = [
         ("double_integrator_2d", 8, "fixed_decay"),    # 2d_obstacle, gtests, ACC notebook
         ("double_integrator_2d", 3, "distance_only"),  # MPC-DC baseline (A5)
@@ -390,7 +389,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--rti", action="store_true", help="use SQP_RTI instead of full SQP")
     parser.add_argument("--output-dir", default=DEFAULT_OUTPUT_DIR, help="output directory")
     parser.add_argument("--all", action="store_true",
-                        help="generate the full §5.6 matrix (ignores the per-config flags)")
+                        help="generate the full configuration matrix (ignores per-config flags)")
     return parser.parse_args()
 
 
