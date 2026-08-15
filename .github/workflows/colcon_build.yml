@@ -94,9 +94,19 @@ jobs:
             https://github.com/acados/acados.git "${ACADOS_SOURCE_DIR}"
           mkdir -p "${ACADOS_SOURCE_DIR}/build"
           cd "${ACADOS_SOURCE_DIR}/build"
+          # HPIPM only. It is always built, and it is the only QP backend the
+          # generated solvers request (PARTIAL_CONDENSING_HPIPM in both
+          # codegen scripts), so qpOASES and OSQP are dead weight here - and
+          # each of them breaks this build on Ubuntu 26.04:
+          #   * the vendored OSQP declares cmake_minimum_required(3.2), which
+          #     CMake 4 rejects outright;
+          #   * the vendored qpOASES has an incompatible-pointer-type error in
+          #     QProblem.c that GCC 15 treats as fatal.
+          # Re-enable either one only together with the flag that works around
+          # its breakage, and only if a generated solver actually needs it.
           cmake -DACADOS_INSTALL_DIR="${ACADOS_SOURCE_DIR}" \
-                -DACADOS_WITH_QPOASES=ON -DACADOS_WITH_HPIPM=ON \
-                -DACADOS_WITH_OSQP=ON \
+                -DACADOS_WITH_QPOASES=OFF \
+                -DACADOS_WITH_OSQP=OFF \
                 -DACADOS_EXAMPLES=OFF ..
           make -j"$(nproc)" install
 
@@ -206,9 +216,19 @@ jobs:
             https://github.com/acados/acados.git "${ACADOS_SOURCE_DIR}"
           mkdir -p "${ACADOS_SOURCE_DIR}/build"
           cd "${ACADOS_SOURCE_DIR}/build"
+          # HPIPM only. It is always built, and it is the only QP backend the
+          # generated solvers request (PARTIAL_CONDENSING_HPIPM in both
+          # codegen scripts), so qpOASES and OSQP are dead weight here - and
+          # each of them breaks this build on Ubuntu 26.04:
+          #   * the vendored OSQP declares cmake_minimum_required(3.2), which
+          #     CMake 4 rejects outright;
+          #   * the vendored qpOASES has an incompatible-pointer-type error in
+          #     QProblem.c that GCC 15 treats as fatal.
+          # Re-enable either one only together with the flag that works around
+          # its breakage, and only if a generated solver actually needs it.
           cmake -DACADOS_INSTALL_DIR="${ACADOS_SOURCE_DIR}" \
-                -DACADOS_WITH_QPOASES=ON -DACADOS_WITH_HPIPM=ON \
-                -DACADOS_WITH_OSQP=ON \
+                -DACADOS_WITH_QPOASES=OFF \
+                -DACADOS_WITH_OSQP=OFF \
                 -DACADOS_EXAMPLES=OFF ..
           make -j"$(nproc)" install
 

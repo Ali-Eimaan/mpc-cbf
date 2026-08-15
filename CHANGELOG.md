@@ -78,4 +78,4 @@ feasibility; the RPI certificate is exact only for the linear model; obstacle
 prediction error and state-estimation error are outside the tube; obstacles
 beyond the nearest eight are dropped; multi-agent coupling is out of scope.
 
-[1.0.0]: https://github.com/Ali-Eimaan/mpc-cbf/releases/tag/v1.0.0
+[1.0.0]: https://github.com/Ali-Eiman/mpc-cbf/releases/tag/v1.0.0

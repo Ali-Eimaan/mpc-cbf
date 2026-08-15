@@ -10,7 +10,7 @@ authors:
 version: 1.0.0
 date-released: '2026-08-15'
 license: BSD-3-Clause
-repository-code: https://github.com/Ali-Eimaan/mpc-cbf
+repository-code: https://github.com/Ali-Eiman/mpc-cbf
 abstract: >-
   A single-agent safety-critical predictive controller in C++/acados and Python.
   Discrete-time control barrier function constraints are imposed along an MPC

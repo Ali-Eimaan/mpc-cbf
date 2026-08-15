@@ -4,7 +4,11 @@
 ACC 2021 and CDC 2021 formulations reproduced in C++/acados, plus a tube-MPC-CBF extension for
 bounded disturbances.
 
-<!-- Badges go here once the workflow has run green on GitHub Actions. -->
+[![colcon build & test](https://github.com/Ali-Eiman/mpc-cbf/actions/workflows/colcon_build.yml/badge.svg)](https://github.com/Ali-Eiman/mpc-cbf/actions/workflows/colcon_build.yml)
+[![License: BSD-3-Clause](https://img.shields.io/badge/license-BSD--3--Clause-blue.svg)](LICENSE)
+[![ROS 2 Lyrical Luth](https://img.shields.io/badge/ROS%202-Lyrical%20Luth-22314E.svg)](https://docs.ros.org/)
+[![acados v0.6.0](https://img.shields.io/badge/acados-v0.6.0-informational.svg)](https://github.com/acados/acados)
+[![C++17](https://img.shields.io/badge/C%2B%2B-17-00599C.svg)](https://en.cppreference.com/w/cpp/17)
 
 ![CBF-QP vs MPC-CBF](media/cbfqp_vs_mpccbf_side_by_side.gif)
 
