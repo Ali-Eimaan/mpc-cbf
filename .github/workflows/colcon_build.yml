@@ -178,7 +178,19 @@ jobs:
   # 2. Python: unit tests + reproduction notebook execution (A6, A9).
   #    Runs in the same container so the acados cache is shared (identical
   #    glibc; a cache saved by the colcon job would not run on the bare
-  #    ubuntu-latest host). setup-python supplies Python 3.13 (spec: CI on 3.13).
+  #    ubuntu-latest host).
+  #
+  #    Uses the container's own interpreter, NOT actions/setup-python. Inside a
+  #    container setup-python installs into the host tool cache (mounted at
+  #    /__t) but bakes the host path /opt/hostedtoolcache/... into the console
+  #    scripts' shebangs, so the very next `pip` call dies with
+  #    "bad interpreter: No such file or directory" (exit 126). The container
+  #    ships its own Python, so the tool cache buys nothing here.
+  #
+  #    Ubuntu 26.04 marks that interpreter externally managed (PEP 668), so the
+  #    dependencies go in a venv created with --system-site-packages - the same
+  #    arrangement the colcon job uses. Each `run:` is a fresh shell, so every
+  #    step activates it.
   # ---------------------------------------------------------------------------
   python:
     name: python tests & notebook reproduction
@@ -192,15 +204,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - uses: actions/setup-python@v5
-        with:
-          python-version: '3.13'
-
       - name: Install system dependencies
         run: |
           apt-get update
           apt-get install -y --no-install-recommends \
-            build-essential cmake git
+            build-essential cmake git python3-pip python3-venv
 
       - name: Restore acados from cache
         id: cache-acados
@@ -232,14 +240,18 @@ jobs:
                 -DACADOS_EXAMPLES=OFF ..
           make -j"$(nproc)" install
 
-      - name: Install Python dependencies
+      - name: Create Python venv and install dependencies
         run: |
+          python3 -m venv --system-site-packages /opt/mpccbf-venv
+          . /opt/mpccbf-venv/bin/activate
           python -m pip install --upgrade pip
           pip install -r codegen/requirements.txt
           pip install -e "${ACADOS_SOURCE_DIR}/interfaces/acados_template"
+          python -c "import sys; print('python', sys.version.split()[0])"
 
       - name: Generate acados solvers
         run: |
+          . /opt/mpccbf-venv/bin/activate
           export ACADOS_SOURCE_DIR="${ACADOS_SOURCE_DIR}"
           export TERA_PATH="${ACADOS_SOURCE_DIR}/bin/t_renderer"
           export LD_LIBRARY_PATH="${ACADOS_SOURCE_DIR}/lib:${LD_LIBRARY_PATH}"
@@ -250,6 +262,7 @@ jobs:
       # in the colcon job where cpp_solve_cli exists and skips here by design.
       - name: Run Python tests
         run: |
+          . /opt/mpccbf-venv/bin/activate
           export ACADOS_SOURCE_DIR="${ACADOS_SOURCE_DIR}"
           export LD_LIBRARY_PATH="${ACADOS_SOURCE_DIR}/lib:${LD_LIBRARY_PATH}"
           pytest mpc_cbf_unified/test/test_recursive_feasibility.py -v
@@ -260,6 +273,7 @@ jobs:
       # and are slower; they run on schedule or on demand, not per push.
       - name: Execute reproduction notebooks
         run: |
+          . /opt/mpccbf-venv/bin/activate
           export ACADOS_SOURCE_DIR="${ACADOS_SOURCE_DIR}"
           export TERA_PATH="${ACADOS_SOURCE_DIR}/bin/t_renderer"
           export LD_LIBRARY_PATH="${ACADOS_SOURCE_DIR}/lib:${LD_LIBRARY_PATH}"
